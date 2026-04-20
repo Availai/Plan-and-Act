@@ -1,34 +1,14 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:planandact/features/plan_management/domain/plan_repository.dart';
 import 'package:planandact/features/plan_management/plan_model.dart';
-import 'package:planandact/core/storage_service.dart';
 
+/// Backward-compatible facade.
+/// New code should depend on [PlanRepository] directly.
 class StorageService {
-  static const String _plansKey = 'my_saved_plans';
+  StorageService(this._repository);
 
-  // Planları Kaydet
-  static Future<void> savePlans(List<PlanModel> plans) async {
-    final prefs = await SharedPreferences.getInstance();
+  final PlanRepository _repository;
 
-    // Plan listesini String (Metin) listesine çeviriyoruz
-    List<String> stringPlans = plans.map((plan) => plan.toJson()).toList();
+  Future<void> savePlans(List<PlanModel> plans) => _repository.savePlans(plans);
 
-    await prefs.setStringList(_plansKey, stringPlans);
-  }
-
-  // Planları Oku (Uygulama açıldığında)
-  static Future<List<PlanModel>> loadPlans() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Kayıtlı metin listesini al
-    List<String>? stringPlans = prefs.getStringList(_plansKey);
-
-    if (stringPlans == null) {
-      return []; // Hiç kayıt yoksa boş liste dön
-    }
-
-    // Metinleri tekrar PlanModel'e çevirip listele
-    return stringPlans
-        .map((planString) => PlanModel.fromJson(planString))
-        .toList();
-  }
+  Future<List<PlanModel>> loadPlans() => _repository.fetchPlans();
 }

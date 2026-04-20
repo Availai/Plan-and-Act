@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:planandact/core/storage_service.dart';
+import 'package:provider/provider.dart';
 
 import 'add_plan_sheet.dart';
 import 'plan_model.dart';
+import 'providers/plan_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,20 +13,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<PlanModel> myPlans = [];
-  bool isLoading = true;
-
   @override
   void initState() {
     super.initState();
-    _loadSavedPlans();
-  }
-
-  Future<void> _loadSavedPlans() async {
-    final savedPlans = await StorageService.loadPlans();
-    setState(() {
-      myPlans = savedPlans..sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
-      isLoading = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PlanProvider>().loadPlans();
     });
   }
 
@@ -37,12 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) => const AddPlanSheet(),
     );
 
-    if (result != null) {
-      setState(() {
-        myPlans.add(result);
-        myPlans.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
-      });
-      await StorageService.savePlans(myPlans);
+    if (result != null && mounted) {
+      await context.read<PlanProvider>().addPlan(result);
     }
   }
 
@@ -50,64 +38,74 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final now = DateTime.now();
-    final todayCount = myPlans.where((plan) {
-      final t = plan.scheduledTime;
-      return t.year == now.year && t.month == now.month && t.day == now.day;
-    }).length;
 
-    return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddSheet,
-        icon: const Icon(Icons.auto_awesome_rounded),
-        label: const Text('Yeni Plan'),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B1021), Color(0xFF101934), Color(0xFF0E1328)],
+    return Consumer<PlanProvider>(
+      builder: (context, planProvider, _) {
+        final myPlans = planProvider.plans;
+        final todayCount = myPlans.where((plan) {
+          final t = plan.scheduledTime;
+          return t.year == now.year && t.month == now.month && t.day == now.day;
+        }).length;
+
+        return Scaffold(
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: _openAddSheet,
+            icon: const Icon(Icons.auto_awesome_rounded),
+            label: const Text('Yeni Plan'),
           ),
-        ),
-        child: SafeArea(
-          child: isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : RefreshIndicator(
-                  onRefresh: _loadSavedPlans,
-                  child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                          child: _HeroPanel(
-                            totalPlanCount: myPlans.length,
-                            todayCount: todayCount,
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF0B1021), Color(0xFF101934), Color(0xFF0E1328)],
+              ),
+            ),
+            child: SafeArea(
+              child: planProvider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: planProvider.loadPlans,
+                      child: CustomScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                              child: _HeroPanel(
+                                totalPlanCount: myPlans.length,
+                                todayCount: todayCount,
+                              ),
+                            ),
                           ),
-                        ),
+                          if (myPlans.isEmpty)
+                            const SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: _EmptyState(),
+                            )
+                          else
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
+                              sliver: SliverList.separated(
+                                itemBuilder: (context, index) {
+                                  final plan = myPlans[index];
+                                  return _PlanCard(
+                                    plan: plan,
+                                    index: index,
+                                    colorScheme: theme.colorScheme,
+                                  );
+                                },
+                                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                                itemCount: myPlans.length,
+                              ),
+                            ),
+                        ],
                       ),
-                      if (myPlans.isEmpty)
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: _EmptyState(),
-                        )
-                      else
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
-                          sliver: SliverList.separated(
-                            itemBuilder: (context, index) {
-                              final plan = myPlans[index];
-                              return _PlanCard(plan: plan, index: index, colorScheme: theme.colorScheme);
-                            },
-                            separatorBuilder: (_, _) => const SizedBox(height: 12),
-                            itemCount: myPlans.length,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-        ),
-      ),
+                    ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -322,38 +320,29 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 30),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 92,
-            height: 92,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  colorScheme.primary.withValues(alpha: 0.5),
-                  colorScheme.tertiary.withValues(alpha: 0.45),
-                ],
-              ),
-            ),
-            child: const Icon(Icons.calendar_month_rounded, size: 46),
+          Icon(
+            Icons.calendar_month_rounded,
+            size: 58,
+            color: Colors.white.withValues(alpha: 0.7),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Harika bir başlangıç için ilk planını ekle ✨',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 18),
           Text(
-            '“Yeni Plan” butonuna dokun ve bugününü organize etmeye başla.',
+            'Henüz plan yok',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Yeni Plan butonuna dokunup ilk hedefini ekleyebilirsin.',
+            style: textTheme.bodyMedium?.copyWith(color: Colors.white70, height: 1.4),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

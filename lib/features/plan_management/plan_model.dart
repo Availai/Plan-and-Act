@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 class PlanModel {
+  static const int currentSchemaVersion = 2;
+
   final String id;
   final String title;
   final String description;
@@ -15,9 +17,9 @@ class PlanModel {
     this.assignedWisdom,
   });
 
-  // Modeli JSON formatına çevirme (Kaydederken kullanacağız)
   Map<String, dynamic> toMap() {
     return {
+      'schemaVersion': currentSchemaVersion,
       'id': id,
       'title': title,
       'description': description,
@@ -26,19 +28,45 @@ class PlanModel {
     };
   }
 
-  // JSON formatından Modeli okuma (Uygulama açıldığında kullanacağız)
   factory PlanModel.fromMap(Map<String, dynamic> map) {
     return PlanModel(
-      id: map['id'],
-      title: map['title'],
-      description: map['description'],
-      scheduledTime: DateTime.parse(map['scheduledTime']),
-      assignedWisdom: map['assignedWisdom'],
+      id: map['id'] as String,
+      title: map['title'] as String? ?? '',
+      description: map['description'] as String? ?? '',
+      scheduledTime: DateTime.parse(map['scheduledTime'] as String),
+      assignedWisdom: map['assignedWisdom'] as String?,
     );
   }
 
-  // Liste halinde kaydetmek için String'e çevirme araçları
+  factory PlanModel.fromMapWithMigration(Map<String, dynamic> rawMap) {
+    final migratedMap = _migrateMap(rawMap);
+    return PlanModel.fromMap(migratedMap);
+  }
+
+  static Map<String, dynamic> _migrateMap(Map<String, dynamic> rawMap) {
+    final schemaVersion = rawMap['schemaVersion'] as int? ?? 1;
+    final migrated = Map<String, dynamic>.from(rawMap);
+
+    if (schemaVersion < 2) {
+      migrated['schemaVersion'] = 2;
+
+      final scheduledTime = migrated['scheduledTime'];
+      if (scheduledTime is int) {
+        migrated['scheduledTime'] =
+            DateTime.fromMillisecondsSinceEpoch(scheduledTime).toIso8601String();
+      }
+
+      migrated['assignedWisdom'] = migrated['assignedWisdom'];
+      migrated['description'] = migrated['description'] ?? '';
+    }
+
+    return migrated;
+  }
+
   String toJson() => json.encode(toMap());
-  factory PlanModel.fromJson(String source) =>
-      PlanModel.fromMap(json.decode(source));
+
+  factory PlanModel.fromJson(String source) {
+    final map = Map<String, dynamic>.from(json.decode(source) as Map);
+    return PlanModel.fromMapWithMigration(map);
+  }
 }
