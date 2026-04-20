@@ -1,30 +1,30 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:planandact/features/plan_management/home_screen.dart';
 import 'package:planandact/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Uygulama açılınca HomeScreen yüklenir', (WidgetTester tester) async {
+    await tester.pumpWidget(const PlanAndActApp());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.byType(HomeScreen), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('Yeni Plan butonu görünür', (WidgetTester tester) async {
+    await tester.pumpWidget(const PlanAndActApp());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Yeni Plan'), findsOneWidget);
+  });
+
+  testWidgets('Plan yokken empty-state metni gösterilir', (WidgetTester tester) async {
+    await tester.pumpWidget(const PlanAndActApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Harika bir başlangıç için ilk planını ekle ✨'), findsOneWidget);
+    expect(
+      find.text('“Yeni Plan” butonuna dokun ve bugününü organize etmeye başla.'),
+      findsOneWidget,
+    );
   });
 }
