@@ -3,9 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:planandact/features/plan_management/application/providers/plans_provider.dart';
 import 'package:planandact/features/plan_management/domain/entities/plan.dart';
 import 'package:planandact/features/plan_management/presentation/widgets/add_plan_sheet.dart';
+import 'package:planandact/features/wisdom_engine/wisdom_service.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _currentIndex = 0;
 
   Future<void> _openAddSheet(BuildContext context) async {
     await showModalBottomSheet<void>(
@@ -17,200 +25,316 @@ class HomeScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+  Widget build(BuildContext context) {
     final plansAsync = ref.watch(plansProvider);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openAddSheet(context),
-        icon: const Icon(Icons.auto_awesome_rounded),
+        icon: const Icon(Icons.add_task_rounded),
         label: const Text('Yeni Plan'),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B1021), Color(0xFF101934), Color(0xFF0E1328)],
-          ),
-        ),
-        child: SafeArea(
-          child: plansAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stackTrace) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text('Planlar yüklenirken hata oluştu: $error'),
-              ),
-            ),
-            data: (plans) {
-              final now = DateTime.now();
-              final todayCount = plans.where((plan) {
-                final t = plan.scheduledTime;
-                return t.year == now.year && t.month == now.month && t.day == now.day;
-              }).length;
+      body: plansAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text('Hata: $error')),
+        data: (plans) {
+          final pages = [
+            _TodayDashboard(plans: plans),
+            _ReflectionScreen(plans: plans),
+            _MomentumView(plans: plans),
+            _StuckDetection(plans: plans),
+          ];
 
-              return RefreshIndicator(
-                onRefresh: ref.read(plansProvider.notifier).refreshPlans,
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                        child: _HeroPanel(
-                          totalPlanCount: plans.length,
-                          todayCount: todayCount,
-                        ),
-                      ),
-                    ),
-                    if (plans.isEmpty)
-                      const SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: _EmptyState(),
-                      )
-                    else
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
-                        sliver: SliverList.separated(
-                          itemBuilder: (context, index) {
-                            final plan = plans[index];
-                            return _PlanCard(plan: plan, index: index, colorScheme: theme.colorScheme);
-                          },
-                          separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemCount: plans.length,
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
+          return SafeArea(child: pages[_currentIndex]);
+        },
       ),
-    );
-  }
-}
-
-class _HeroPanel extends StatelessWidget {
-  const _HeroPanel({required this.totalPlanCount, required this.todayCount});
-
-  final int totalPlanCount;
-  final int todayCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final titleStyle = Theme.of(context).textTheme.headlineSmall?.copyWith(
-      fontWeight: FontWeight.w800,
-      letterSpacing: 0.2,
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5C6CFF), Color(0xFF8562FF), Color(0xFFBD61FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const [
-          BoxShadow(color: Color(0x4D5D6DFF), blurRadius: 24, offset: Offset(0, 10)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(Icons.rocket_launch_rounded, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text('Plan and Act', style: titleStyle?.copyWith(color: Colors.white)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Bugün için hedeflerini belirle, harekete geç ve motivasyonunu yüksek tut.',
-            style: TextStyle(color: Colors.white, height: 1.4),
-          ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _StatBadge(label: 'Toplam Plan', value: '$totalPlanCount'),
-              _StatBadge(label: 'Bugün', value: '$todayCount'),
-            ],
-          ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) => setState(() => _currentIndex = index),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.today_rounded), label: 'Today'),
+          NavigationDestination(icon: Icon(Icons.self_improvement_rounded), label: 'Reflection'),
+          NavigationDestination(icon: Icon(Icons.bolt_rounded), label: 'Momentum'),
+          NavigationDestination(icon: Icon(Icons.warning_amber_rounded), label: 'Stuck'),
         ],
       ),
     );
   }
 }
 
-class _StatBadge extends StatelessWidget {
-  const _StatBadge({required this.label, required this.value});
+class _TodayDashboard extends ConsumerWidget {
+  const _TodayDashboard({required this.plans});
 
-  final String label;
-  final String value;
+  final List<Plan> plans;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        color: Colors.white.withValues(alpha: 0.22),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now();
+    final todayPlans = plans.where((plan) => _isSameDay(plan.scheduledTime, now)).toList();
+    final completedToday =
+        todayPlans.where((plan) => plan.status == PlanStatus.completed).length;
+    final progress = todayPlans.isEmpty ? 0.0 : completedToday / todayPlans.length;
+
+    final motivation = WisdomService.generateForToday(plans);
+
+    return RefreshIndicator(
+      onRefresh: ref.read(plansProvider.notifier).refreshPlans,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
         children: [
           Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            'Today Dashboard',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(width: 8),
-          Text(label, style: const TextStyle(color: Colors.white70)),
+          const SizedBox(height: 12),
+          _ProgressHero(progress: progress, completed: completedToday, total: todayPlans.length),
+          const SizedBox(height: 12),
+          _MotivationCard(motivation: motivation),
+          const SizedBox(height: 12),
+          _HistoricalInspirationCard(motivation: motivation),
+          const SizedBox(height: 12),
+          ...todayPlans.map(
+            (plan) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _PlanTile(plan: plan),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _PlanCard extends StatelessWidget {
-  const _PlanCard({required this.plan, required this.index, required this.colorScheme});
+class _ReflectionScreen extends StatelessWidget {
+  const _ReflectionScreen({required this.plans});
 
-  final Plan plan;
-  final int index;
-  final ColorScheme colorScheme;
+  final List<Plan> plans;
 
   @override
   Widget build(BuildContext context) {
-    final description = plan.description.trim();
-    final wisdom = plan.assignedWisdom?.trim();
+    final completed = plans.where((p) => p.status == PlanStatus.completed).toList();
+    final postponed = plans.where((p) => p.status == PlanStatus.postponed).toList();
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
-            colorScheme.surfaceContainer.withValues(alpha: 0.8),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+      children: [
+        Text(
+          'Reflection Screen',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        _ReflectionBucket(
+          title: 'Bugün tamamlananlar',
+          icon: Icons.check_circle_rounded,
+          plans: completed,
+        ),
+        const SizedBox(height: 12),
+        _ReflectionBucket(
+          title: 'Ertelenenler',
+          icon: Icons.update_rounded,
+          plans: postponed,
+        ),
+      ],
+    );
+  }
+}
+
+class _MomentumView extends StatelessWidget {
+  const _MomentumView({required this.plans});
+
+  final List<Plan> plans;
+
+  @override
+  Widget build(BuildContext context) {
+    final streak = _calculateStreak(plans);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+      children: [
+        Text(
+          'Momentum View',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('$streak gün üst üste ilerleme',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                const Text('Her gün en az 1 görevi tamamlayarak ritmini koruyorsun.'),
+                const SizedBox(height: 14),
+                LinearProgressIndicator(value: (streak % 7) / 7),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StuckDetection extends StatelessWidget {
+  const _StuckDetection({required this.plans});
+
+  final List<Plan> plans;
+
+  @override
+  Widget build(BuildContext context) {
+    final stuckPlans = plans.where((p) => p.postponeCount >= 2).toList()
+      ..sort((a, b) => b.postponeCount.compareTo(a.postponeCount));
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+      children: [
+        Text(
+          'Stuck Detection',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        const Text('Sürekli ertelenen görevleri tespit edip kırılabilir adımlara dönüştür.'),
+        const SizedBox(height: 12),
+        if (stuckPlans.isEmpty)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Şu an takılan görev yok. Momentum güçlü gidiyor. 🚀'),
+            ),
+          )
+        else
+          ...stuckPlans.map(
+            (plan) => Card(
+              child: ListTile(
+                title: Text(plan.title),
+                subtitle: Text('Ertelenme sayısı: ${plan.postponeCount}'),
+                trailing: const Icon(Icons.priority_high_rounded),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ProgressHero extends StatelessWidget {
+  const _ProgressHero({required this.progress, required this.completed, required this.total});
+
+  final double progress;
+  final int completed;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Bugünkü ilerleme', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: progress),
+            const SizedBox(height: 10),
+            Text('$completed / $total görev tamamlandı'),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
       ),
+    );
+  }
+}
+
+class _MotivationCard extends StatelessWidget {
+  const _MotivationCard({required this.motivation});
+
+  final MotivationOutput motivation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('"${motivation.quote}"', style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text('- ${motivation.author}'),
+            const Divider(height: 24),
+            Text(motivation.whyThisQuote),
+            const SizedBox(height: 8),
+            Text('1 küçük aksiyon: ${motivation.microAction}'),
+            const SizedBox(height: 6),
+            Text('Bugün en küçük başlanabilir adım: ${motivation.smallestStartStep}'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoricalInspirationCard extends StatelessWidget {
+  const _HistoricalInspirationCard({required this.motivation});
+
+  final MotivationOutput motivation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.auto_stories_rounded),
+        title: Text(motivation.historicalPerson),
+        subtitle: Text(motivation.historicalContext),
+      ),
+    );
+  }
+}
+
+class _PlanTile extends ConsumerWidget {
+  const _PlanTile({required this.plan});
+
+  final Plan plan;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Card(
+      child: ListTile(
+        title: Text(plan.title),
+        subtitle: Text('${_formatTime(plan.scheduledTime)} · ${plan.category.name}'),
+        trailing: Wrap(
+          spacing: 4,
+          children: [
+            IconButton(
+              tooltip: 'Tamamla',
+              onPressed: plan.status == PlanStatus.completed
+                  ? null
+                  : () => ref.read(plansProvider.notifier).markPlanCompleted(plan.id),
+              icon: const Icon(Icons.check_circle_rounded),
+            ),
+            IconButton(
+              tooltip: 'Ertele',
+              onPressed: () => ref.read(plansProvider.notifier).postponePlan(plan.id),
+              icon: const Icon(Icons.schedule_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReflectionBucket extends StatelessWidget {
+  const _ReflectionBucket({required this.title, required this.icon, required this.plans});
+
+  final String title;
+  final IconData icon;
+  final List<Plan> plans;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -218,58 +342,19 @@ class _PlanCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colorScheme.primary.withValues(alpha: 0.2),
-                  ),
-                  child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    plan.title,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                  ),
-                ),
+                Icon(icon),
                 const SizedBox(width: 8),
-                _TimePill(dateTime: plan.scheduledTime),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
               ],
             ),
-            if (description.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                description,
-                style: TextStyle(color: colorScheme.onSurfaceVariant, height: 1.35),
-              ),
-            ],
-            if (wisdom != null && wisdom.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  color: colorScheme.primaryContainer.withValues(alpha: 0.35),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.lightbulb_rounded, size: 18, color: colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        wisdom,
-                        style: TextStyle(color: colorScheme.onSurface, fontSize: 13.5),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            const SizedBox(height: 8),
+            if (plans.isEmpty)
+              const Text('Kayıt yok')
+            else
+              ...plans.map((plan) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text('• ${plan.title}'),
+                  )),
           ],
         ),
       ),
@@ -277,67 +362,29 @@ class _PlanCard extends StatelessWidget {
   }
 }
 
-class _TimePill extends StatelessWidget {
-  const _TimePill({required this.dateTime});
-
-  final DateTime dateTime;
-
-  @override
-  Widget build(BuildContext context) {
-    final hh = dateTime.hour.toString().padLeft(2, '0');
-    final mm = dateTime.minute.toString().padLeft(2, '0');
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(100),
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-      ),
-      child: Text('$hh:$mm', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-    );
-  }
+bool _isSameDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+String _formatTime(DateTime dateTime) {
+  final hh = dateTime.hour.toString().padLeft(2, '0');
+  final mm = dateTime.minute.toString().padLeft(2, '0');
+  return '$hh:$mm';
+}
 
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+int _calculateStreak(List<Plan> plans) {
+  final completedDays = plans
+      .where((plan) => plan.completedAt != null)
+      .map((plan) => DateTime(plan.completedAt!.year, plan.completedAt!.month, plan.completedAt!.day))
+      .toSet();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 92,
-            height: 92,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  colorScheme.primary.withValues(alpha: 0.5),
-                  colorScheme.tertiary.withValues(alpha: 0.45),
-                ],
-              ),
-            ),
-            child: const Icon(Icons.calendar_month_rounded, size: 46),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Harika bir başlangıç için ilk planını ekle ✨',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '“Yeni Plan” butonuna dokun ve bugününü organize etmeye başla.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
+  var streak = 0;
+  var cursor = DateTime.now();
+
+  while (completedDays.contains(DateTime(cursor.year, cursor.month, cursor.day))) {
+    streak += 1;
+    cursor = cursor.subtract(const Duration(days: 1));
   }
+
+  return streak;
 }
