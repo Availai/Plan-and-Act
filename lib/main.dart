@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:planandact/features/plan_management/home_screen.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:go_router/go_router.dart';
+import 'package:planandact/app/router/app_router.dart';
 
 void main() {
+  GoRouter.optionURLReflectsImperativeAPIs = true;
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
   runApp(const PlanAndActApp());
 }
 
@@ -12,9 +19,10 @@ class PlanAndActApp extends StatelessWidget {
   Widget build(BuildContext context) {
     const seedColor = Color(0xFF5C6CFF);
 
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Plan and Act',
       debugShowCheckedModeBanner: false,
+      routerConfig: appRouter,
       themeMode: ThemeMode.dark,
       theme: ThemeData(
         useMaterial3: true,
@@ -55,7 +63,6 @@ class PlanAndActApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomeScreen(),
     );
   }
 }

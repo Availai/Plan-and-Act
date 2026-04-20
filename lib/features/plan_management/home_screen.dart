@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:planandact/core/storage_service.dart';
 
-import 'add_plan_sheet.dart';
 import 'plan_model.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -30,12 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openAddSheet() async {
-    final result = await showModalBottomSheet<PlanModel>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const AddPlanSheet(),
-    );
+    final result = await context.push<PlanModel>('/plan/new');
 
     if (result != null) {
       setState(() {
@@ -97,7 +92,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           sliver: SliverList.separated(
                             itemBuilder: (context, index) {
                               final plan = myPlans[index];
-                              return _PlanCard(plan: plan, index: index, colorScheme: theme.colorScheme);
+                              return _PlanCard(
+                                plan: plan,
+                                index: index,
+                                colorScheme: theme.colorScheme,
+                                onTap: () => context.push('/plan/${plan.id}', extra: plan),
+                              );
                             },
                             separatorBuilder: (_, _) => const SizedBox(height: 12),
                             itemCount: myPlans.length,
@@ -207,89 +207,102 @@ class _StatBadge extends StatelessWidget {
 }
 
 class _PlanCard extends StatelessWidget {
-  const _PlanCard({required this.plan, required this.index, required this.colorScheme});
+  const _PlanCard({
+    required this.plan,
+    required this.index,
+    required this.colorScheme,
+    this.onTap,
+  });
 
   final PlanModel plan;
   final int index;
   final ColorScheme colorScheme;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final description = plan.description.trim();
     final wisdom = plan.assignedWisdom?.trim();
 
-    return Container(
-      decoration: BoxDecoration(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
-            colorScheme.surfaceContainer.withValues(alpha: 0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colorScheme.primary.withValues(alpha: 0.2),
-                  ),
-                  child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    plan.title,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _TimePill(dateTime: plan.scheduledTime),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
+                colorScheme.surfaceContainer.withValues(alpha: 0.8),
               ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            if (description.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                description,
-                style: TextStyle(color: colorScheme.onSurfaceVariant, height: 1.35),
-              ),
-            ],
-            if (wisdom != null && wisdom.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  color: colorScheme.primaryContainer.withValues(alpha: 0.35),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Icon(Icons.lightbulb_rounded, size: 18, color: colorScheme.primary),
-                    const SizedBox(width: 8),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colorScheme.primary.withValues(alpha: 0.2),
+                      ),
+                      child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        wisdom,
-                        style: TextStyle(color: colorScheme.onSurface, fontSize: 13.5),
+                        plan.title,
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    _TimePill(dateTime: plan.scheduledTime),
                   ],
                 ),
-              ),
-            ],
-          ],
+                if (description.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    description,
+                    style: TextStyle(color: colorScheme.onSurfaceVariant, height: 1.35),
+                  ),
+                ],
+                if (wisdom != null && wisdom.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: colorScheme.primaryContainer.withValues(alpha: 0.35),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.lightbulb_rounded, size: 18, color: colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            wisdom,
+                            style: TextStyle(color: colorScheme.onSurface, fontSize: 13.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
