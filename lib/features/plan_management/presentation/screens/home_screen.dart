@@ -1,63 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:planandact/core/storage_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:planandact/features/plan_management/application/providers/plans_provider.dart';
+import 'package:planandact/features/plan_management/domain/entities/plan.dart';
+import 'package:planandact/features/plan_management/presentation/widgets/add_plan_sheet.dart';
 
-import 'add_plan_sheet.dart';
-import 'plan_model.dart';
-
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  List<PlanModel> myPlans = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedPlans();
-  }
-
-  Future<void> _loadSavedPlans() async {
-    final savedPlans = await StorageService.loadPlans();
-    setState(() {
-      myPlans = savedPlans..sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
-      isLoading = false;
-    });
-  }
-
-  Future<void> _openAddSheet() async {
-    final result = await showModalBottomSheet<PlanModel>(
+  Future<void> _openAddSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const AddPlanSheet(),
     );
-
-    if (result != null) {
-      setState(() {
-        myPlans.add(result);
-        myPlans.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
-      });
-      await StorageService.savePlans(myPlans);
-    }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final now = DateTime.now();
-    final todayCount = myPlans.where((plan) {
-      final t = plan.scheduledTime;
-      return t.year == now.year && t.month == now.month && t.day == now.day;
-    }).length;
+    final plansAsync = ref.watch(plansProvider);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddSheet,
+        onPressed: () => _openAddSheet(context),
         icon: const Icon(Icons.auto_awesome_rounded),
         label: const Text('Yeni Plan'),
       ),
@@ -70,42 +36,57 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: SafeArea(
-          child: isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : RefreshIndicator(
-                  onRefresh: _loadSavedPlans,
-                  child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                          child: _HeroPanel(
-                            totalPlanCount: myPlans.length,
-                            todayCount: todayCount,
-                          ),
+          child: plansAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stackTrace) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text('Planlar yüklenirken hata oluştu: $error'),
+              ),
+            ),
+            data: (plans) {
+              final now = DateTime.now();
+              final todayCount = plans.where((plan) {
+                final t = plan.scheduledTime;
+                return t.year == now.year && t.month == now.month && t.day == now.day;
+              }).length;
+
+              return RefreshIndicator(
+                onRefresh: ref.read(plansProvider.notifier).refreshPlans,
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                        child: _HeroPanel(
+                          totalPlanCount: plans.length,
+                          todayCount: todayCount,
                         ),
                       ),
-                      if (myPlans.isEmpty)
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: _EmptyState(),
-                        )
-                      else
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
-                          sliver: SliverList.separated(
-                            itemBuilder: (context, index) {
-                              final plan = myPlans[index];
-                              return _PlanCard(plan: plan, index: index, colorScheme: theme.colorScheme);
-                            },
-                            separatorBuilder: (_, _) => const SizedBox(height: 12),
-                            itemCount: myPlans.length,
-                          ),
+                    ),
+                    if (plans.isEmpty)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _EmptyState(),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
+                        sliver: SliverList.separated(
+                          itemBuilder: (context, index) {
+                            final plan = plans[index];
+                            return _PlanCard(plan: plan, index: index, colorScheme: theme.colorScheme);
+                          },
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemCount: plans.length,
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -209,7 +190,7 @@ class _StatBadge extends StatelessWidget {
 class _PlanCard extends StatelessWidget {
   const _PlanCard({required this.plan, required this.index, required this.colorScheme});
 
-  final PlanModel plan;
+  final Plan plan;
   final int index;
   final ColorScheme colorScheme;
 
