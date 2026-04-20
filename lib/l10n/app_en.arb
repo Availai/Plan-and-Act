@@ -1,0 +1,56 @@
+{
+  "@@locale": "en",
+  "appTitle": "Plan and Act",
+  "newPlan": "New Plan",
+  "heroDescription": "Set your goals for today, take action, and keep your motivation high.",
+  "totalPlan": "Total Plans",
+  "today": "Today",
+  "loadingPlans": "Loading plans",
+  "emptyStateTitle": "Add your first plan for a great start ✨",
+  "emptyStateDescription": "Tap the \u201cNew Plan\u201d button and start organizing your day.",
+  "sheetTitle": "Create New Plan",
+  "sheetSubtitle": "Write your goal, set the time, and get a motivational quote.",
+  "planTitleLabel": "Plan title",
+  "planTitleHint": "e.g. Morning walk",
+  "planDetailsLabel": "Details (optional)",
+  "planDetailsHint": "e.g. 30 minutes brisk walk",
+  "pickTimeRequired": "Select time (required)",
+  "selectedTime": "Selected time: {time}",
+  "@selectedTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "savePlan": "Save Plan",
+  "validationTitleTime": "Please enter a title and time.",
+  "fabSemantics": "Add new plan",
+  "timePickerSemantics": "Select plan time",
+  "timePickerHint": "Double tap to choose a time for your plan",
+  "planCardSemantics": "Plan card {index}",
+  "@planCardSemantics": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "planOrderSemantics": "Plan order {index}",
+  "@planOrderSemantics": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSemantics": "Plan time {time}",
+  "@timeSemantics": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "wisdomSport": "A sound mind resides in a sound body.\n- Mustafa Kemal Atatürk",
+  "wisdomStudy": "We need nothing else, only one thing: to be hardworking!\n- Mustafa Kemal Atatürk",
+  "wisdomStress": "Our life is what our thoughts make it.\n- Marcus Aurelius",
+  "wisdomReading": "Reading nourishes the mind.\n- Seneca",
+  "wisdomDefault": "Know the value of time, because life is made of it.\n- Benjamin Franklin"
+}

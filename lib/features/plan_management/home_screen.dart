@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:planandact/core/storage_service.dart';
+import 'package:planandact/l10n/app_localizations.dart';
 
 import 'add_plan_sheet.dart';
 import 'plan_model.dart';
@@ -48,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final now = DateTime.now();
     final todayCount = myPlans.where((plan) {
@@ -56,10 +59,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }).length;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddSheet,
-        icon: const Icon(Icons.auto_awesome_rounded),
-        label: const Text('Yeni Plan'),
+      floatingActionButton: Semantics(
+        button: true,
+        label: l10n.fabSemantics,
+        child: FloatingActionButton.extended(
+          onPressed: _openAddSheet,
+          icon: const Icon(Icons.auto_awesome_rounded),
+          label: Text(l10n.newPlan),
+        ),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -71,7 +78,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: SafeArea(
           child: isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(
+                  child: Semantics(
+                    label: l10n.loadingPlans,
+                    child: const CircularProgressIndicator(),
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: _loadSavedPlans,
                   child: CustomScrollView(
@@ -120,59 +132,65 @@ class _HeroPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final titleStyle = Theme.of(context).textTheme.headlineSmall?.copyWith(
       fontWeight: FontWeight.w800,
       letterSpacing: 0.2,
     );
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5C6CFF), Color(0xFF8562FF), Color(0xFFBD61FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const [
-          BoxShadow(color: Color(0x4D5D6DFF), blurRadius: 24, offset: Offset(0, 10)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 360;
+        return Container(
+          padding: EdgeInsets.all(compact ? 16 : 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4355D8), Color(0xFF634ED8), Color(0xFF844EC2)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: const [
+              BoxShadow(color: Color(0x4D5D6DFF), blurRadius: 24, offset: Offset(0, 10)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(Icons.rocket_launch_rounded, color: Colors.white),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.rocket_launch_rounded, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(l10n.appTitle, style: titleStyle?.copyWith(color: Colors.white)),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text('Plan and Act', style: titleStyle?.copyWith(color: Colors.white)),
+              const SizedBox(height: 14),
+              Text(
+                l10n.heroDescription,
+                style: const TextStyle(color: Colors.white, height: 1.4),
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _StatBadge(label: l10n.totalPlan, value: '$totalPlanCount'),
+                  _StatBadge(label: l10n.today, value: '$todayCount'),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          const Text(
-            'Bugün için hedeflerini belirle, harekete geç ve motivasyonunu yüksek tut.',
-            style: TextStyle(color: Colors.white, height: 1.4),
-          ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _StatBadge(label: 'Toplam Plan', value: '$totalPlanCount'),
-              _StatBadge(label: 'Bugün', value: '$todayCount'),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -215,81 +233,90 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final description = plan.description.trim();
     final wisdom = plan.assignedWisdom?.trim();
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
-            colorScheme.surfaceContainer.withValues(alpha: 0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return Semantics(
+      container: true,
+      label: l10n.planCardSemantics(index + 1),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
+              colorScheme.surfaceContainer.withValues(alpha: 0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colorScheme.primary.withValues(alpha: 0.2),
-                  ),
-                  child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    plan.title,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _TimePill(dateTime: plan.scheduledTime),
-              ],
-            ),
-            if (description.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                description,
-                style: TextStyle(color: colorScheme.onSurfaceVariant, height: 1.35),
-              ),
-            ],
-            if (wisdom != null && wisdom.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  color: colorScheme.primaryContainer.withValues(alpha: 0.35),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.lightbulb_rounded, size: 18, color: colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        wisdom,
-                        style: TextStyle(color: colorScheme.onSurface, fontSize: 13.5),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Semantics(
+                    label: l10n.planOrderSemantics(index + 1),
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colorScheme.primary.withValues(alpha: 0.2),
                       ),
+                      child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      plan.title,
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _TimePill(dateTime: plan.scheduledTime),
+                ],
               ),
+              if (description.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  description,
+                  style: TextStyle(color: colorScheme.onSurfaceVariant, height: 1.35),
+                ),
+              ],
+              if (wisdom != null && wisdom.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.35),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.lightbulb_rounded, size: 18, color: colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          wisdom,
+                          style: TextStyle(color: colorScheme.onSurface, fontSize: 13.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -303,16 +330,20 @@ class _TimePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hh = dateTime.hour.toString().padLeft(2, '0');
-    final mm = dateTime.minute.toString().padLeft(2, '0');
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final formattedTime = DateFormat.Hm(locale).format(dateTime);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(100),
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+    return Semantics(
+      label: l10n.timeSemantics(formattedTime),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(100),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        ),
+        child: Text(formattedTime, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
       ),
-      child: Text('$hh:$mm', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
     );
   }
 }
@@ -322,6 +353,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -344,14 +376,14 @@ class _EmptyState extends StatelessWidget {
             child: const Icon(Icons.calendar_month_rounded, size: 46),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Harika bir başlangıç için ilk planını ekle ✨',
+          Text(
+            l10n.emptyStateTitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
           Text(
-            '“Yeni Plan” butonuna dokun ve bugününü organize etmeye başla.',
+            l10n.emptyStateDescription,
             textAlign: TextAlign.center,
             style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:planandact/features/wisdom_engine/wisdom_service.dart';
+import 'package:planandact/l10n/app_localizations.dart';
 
 import 'plan_model.dart';
 
@@ -44,9 +46,10 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
   }
 
   void _savePlan() {
+    final l10n = AppLocalizations.of(context);
     if (_titleController.text.trim().isEmpty || _selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen başlık ve saat girin.')),
+        SnackBar(content: Text(l10n.validationTitleTime)),
       );
       return;
     }
@@ -62,7 +65,7 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
 
     final title = _titleController.text.trim();
     final description = _descController.text.trim();
-    final generatedWisdom = WisdomService.generateWisdom(title, description);
+    final generatedWisdom = WisdomService.generateWisdom(title, description, l10n);
 
     final newPlan = PlanModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -77,123 +80,148 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final colorScheme = Theme.of(context).colorScheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E142B),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 360;
+        final horizontalPadding = compact ? 16.0 : 20.0;
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF0E142B),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, bottomInset + 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6677FF), Color(0xFFAD65FF)],
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
-                  child: const Icon(Icons.add_task_rounded, color: Colors.white),
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Yeni Plan Oluştur',
-                    style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+                const SizedBox(height: 18),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6677FF), Color(0xFFAD65FF)],
+                        ),
+                      ),
+                      child: const Icon(Icons.add_task_rounded, color: Colors.white),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        l10n.sheetTitle,
+                        style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.sheetSubtitle,
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _titleController,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: l10n.planTitleLabel,
+                    hintText: l10n.planTitleHint,
+                    prefixIcon: const Icon(Icons.flag_rounded),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _descController,
+                  maxLines: compact ? 2 : 3,
+                  decoration: InputDecoration(
+                    labelText: l10n.planDetailsLabel,
+                    hintText: l10n.planDetailsHint,
+                    alignLabelWithHint: true,
+                    prefixIcon: const Icon(Icons.notes_rounded),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Semantics(
+                  button: true,
+                  label: l10n.timePickerSemantics,
+                  hint: l10n.timePickerHint,
+                  child: InkWell(
+                    onTap: _pickTime,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Ink(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: const Color(0xFF1A2242),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.access_time_rounded),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _selectedTime == null
+                                  ? l10n.pickTimeRequired
+                                  : l10n.selectedTime(
+                                      DateFormat.Hm(locale).format(
+                                        DateTime(
+                                          2026,
+                                          1,
+                                          1,
+                                          _selectedTime!.hour,
+                                          _selectedTime!.minute,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _savePlan,
+                    icon: const Icon(Icons.check_circle_rounded),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(l10n.savePlan, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF7582FF),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Hedefini yaz, saatini belirle ve motivasyon mesajını kap.',
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _titleController,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Plan başlığı',
-                hintText: 'Örn: Sabah yürüyüşü',
-                prefixIcon: Icon(Icons.flag_rounded),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _descController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Detaylar (opsiyonel)',
-                hintText: 'Örn: 30 dakika tempolu yürüyüş',
-                alignLabelWithHint: true,
-                prefixIcon: Icon(Icons.notes_rounded),
-              ),
-            ),
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: _pickTime,
-              borderRadius: BorderRadius.circular(16),
-              child: Ink(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: const Color(0xFF1A2242),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.access_time_rounded),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _selectedTime == null
-                            ? 'Saat seç (zorunlu)'
-                            : 'Seçilen saat: ${_selectedTime!.format(context)}',
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right_rounded),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _savePlan,
-                icon: const Icon(Icons.check_circle_rounded),
-                label: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('Planı Kaydet', style: TextStyle(fontWeight: FontWeight.w700)),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF7582FF),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
