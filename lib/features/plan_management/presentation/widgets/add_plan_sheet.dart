@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:planandact/features/plan_management/application/providers/add_plan_form_provider.dart';
 import 'package:planandact/features/plan_management/application/providers/plans_provider.dart';
 import 'package:planandact/features/plan_management/domain/entities/plan.dart';
-import 'package:planandact/features/wisdom_engine/wisdom_service.dart';
 
 class AddPlanSheet extends ConsumerWidget {
   const AddPlanSheet({super.key});
@@ -13,16 +12,6 @@ class AddPlanSheet extends ConsumerWidget {
     final time = await showTimePicker(
       context: context,
       initialTime: selectedTime ?? TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: const Color(0xFF7A86FF),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (time != null) {
@@ -50,16 +39,13 @@ class AddPlanSheet extends ConsumerWidget {
       selectedTime.minute,
     );
 
-    final title = formState.title.trim();
-    final description = formState.description.trim();
-    final generatedWisdom = WisdomService.generateWisdom(title, description);
-
     final newPlan = Plan(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      description: description,
+      title: formState.title.trim(),
+      description: formState.description.trim(),
       scheduledTime: scheduledDateTime,
-      assignedWisdom: generatedWisdom,
+      category: formState.category,
+      createdAt: DateTime.now(),
     );
 
     await ref.read(plansProvider.notifier).addPlan(newPlan);
@@ -97,30 +83,13 @@ class AddPlanSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 18),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6677FF), Color(0xFFAD65FF)],
-                    ),
-                  ),
-                  child: const Icon(Icons.add_task_rounded, color: Colors.white),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Yeni Plan Oluştur',
-                    style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ],
+            const Text(
+              'Yeni Plan Oluştur',
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Text(
-              'Hedefini yaz, saatini belirle ve motivasyon mesajını kap.',
+              'Kategori seç, planı zamanla ve Dashboard akışına ekle.',
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
@@ -130,7 +99,7 @@ class AddPlanSheet extends ConsumerWidget {
               onChanged: ref.read(addPlanFormProvider.notifier).setTitle,
               decoration: const InputDecoration(
                 labelText: 'Plan başlığı',
-                hintText: 'Örn: Sabah yürüyüşü',
+                hintText: 'Örn: Sprint dokümanını tamamla',
                 prefixIcon: Icon(Icons.flag_rounded),
               ),
             ),
@@ -141,10 +110,31 @@ class AddPlanSheet extends ConsumerWidget {
               onChanged: ref.read(addPlanFormProvider.notifier).setDescription,
               decoration: const InputDecoration(
                 labelText: 'Detaylar (opsiyonel)',
-                hintText: 'Örn: 30 dakika tempolu yürüyüş',
+                hintText: 'Örn: 3 ana konu + aksiyon planı',
                 alignLabelWithHint: true,
                 prefixIcon: Icon(Icons.notes_rounded),
               ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<PlanCategory>(
+              value: formState.category,
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(addPlanFormProvider.notifier).setCategory(value);
+                }
+              },
+              decoration: const InputDecoration(
+                labelText: 'Kategori',
+                prefixIcon: Icon(Icons.category_rounded),
+              ),
+              items: PlanCategory.values
+                  .map(
+                    (category) => DropdownMenuItem(
+                      value: category,
+                      child: Text(_labelForCategory(category)),
+                    ),
+                  )
+                  .toList(),
             ),
             const SizedBox(height: 12),
             InkWell(
@@ -182,15 +172,26 @@ class AddPlanSheet extends ConsumerWidget {
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Text('Planı Kaydet', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF7582FF),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  static String _labelForCategory(PlanCategory category) {
+    switch (category) {
+      case PlanCategory.deepWork:
+        return 'Deep Work';
+      case PlanCategory.health:
+        return 'Sağlık';
+      case PlanCategory.learning:
+        return 'Öğrenme';
+      case PlanCategory.personal:
+        return 'Kişisel';
+      case PlanCategory.admin:
+        return 'Operasyon';
+    }
   }
 }
