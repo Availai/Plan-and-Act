@@ -1,31 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:planandact/features/plan_management/application/providers/add_plan_form_provider.dart';
+import 'package:planandact/features/plan_management/application/providers/plans_provider.dart';
+import 'package:planandact/features/plan_management/domain/entities/plan.dart';
 import 'package:planandact/features/wisdom_engine/wisdom_service.dart';
 
-import 'plan_model.dart';
-
-class AddPlanSheet extends StatefulWidget {
+class AddPlanSheet extends ConsumerWidget {
   const AddPlanSheet({super.key});
 
-  @override
-  State<AddPlanSheet> createState() => _AddPlanSheetState();
-}
-
-class _AddPlanSheetState extends State<AddPlanSheet> {
-  final _titleController = TextEditingController();
-  final _descController = TextEditingController();
-  TimeOfDay? _selectedTime;
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickTime() async {
+  Future<void> _pickTime(BuildContext context, WidgetRef ref) async {
+    final selectedTime = ref.read(addPlanFormProvider).selectedTime;
     final time = await showTimePicker(
       context: context,
-      initialTime: _selectedTime ?? TimeOfDay.now(),
+      initialTime: selectedTime ?? TimeOfDay.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -39,12 +26,14 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
     );
 
     if (time != null) {
-      setState(() => _selectedTime = time);
+      ref.read(addPlanFormProvider.notifier).setTime(time);
     }
   }
 
-  void _savePlan() {
-    if (_titleController.text.trim().isEmpty || _selectedTime == null) {
+  Future<void> _savePlan(BuildContext context, WidgetRef ref) async {
+    final formState = ref.read(addPlanFormProvider);
+
+    if (!formState.canSave) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lütfen başlık ve saat girin.')),
       );
@@ -52,19 +41,20 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
     }
 
     final now = DateTime.now();
+    final selectedTime = formState.selectedTime!;
     final scheduledDateTime = DateTime(
       now.year,
       now.month,
       now.day,
-      _selectedTime!.hour,
-      _selectedTime!.minute,
+      selectedTime.hour,
+      selectedTime.minute,
     );
 
-    final title = _titleController.text.trim();
-    final description = _descController.text.trim();
+    final title = formState.title.trim();
+    final description = formState.description.trim();
     final generatedWisdom = WisdomService.generateWisdom(title, description);
 
-    final newPlan = PlanModel(
+    final newPlan = Plan(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
       description: description,
@@ -72,13 +62,18 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
       assignedWisdom: generatedWisdom,
     );
 
-    Navigator.pop(context, newPlan);
+    await ref.read(plansProvider.notifier).addPlan(newPlan);
+
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final colorScheme = Theme.of(context).colorScheme;
+    final formState = ref.watch(addPlanFormProvider);
 
     return Container(
       decoration: const BoxDecoration(
@@ -129,9 +124,10 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
-            TextField(
-              controller: _titleController,
+            TextFormField(
+              initialValue: formState.title,
               textInputAction: TextInputAction.next,
+              onChanged: ref.read(addPlanFormProvider.notifier).setTitle,
               decoration: const InputDecoration(
                 labelText: 'Plan başlığı',
                 hintText: 'Örn: Sabah yürüyüşü',
@@ -139,9 +135,10 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _descController,
+            TextFormField(
+              initialValue: formState.description,
               maxLines: 3,
+              onChanged: ref.read(addPlanFormProvider.notifier).setDescription,
               decoration: const InputDecoration(
                 labelText: 'Detaylar (opsiyonel)',
                 hintText: 'Örn: 30 dakika tempolu yürüyüş',
@@ -151,7 +148,7 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
             ),
             const SizedBox(height: 12),
             InkWell(
-              onTap: _pickTime,
+              onTap: () => _pickTime(context, ref),
               borderRadius: BorderRadius.circular(16),
               child: Ink(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -165,9 +162,9 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        _selectedTime == null
+                        formState.selectedTime == null
                             ? 'Saat seç (zorunlu)'
-                            : 'Seçilen saat: ${_selectedTime!.format(context)}',
+                            : 'Seçilen saat: ${formState.selectedTime!.format(context)}',
                       ),
                     ),
                     const Icon(Icons.chevron_right_rounded),
@@ -179,7 +176,7 @@ class _AddPlanSheetState extends State<AddPlanSheet> {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: _savePlan,
+                onPressed: () => _savePlan(context, ref),
                 icon: const Icon(Icons.check_circle_rounded),
                 label: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
