@@ -61,6 +61,15 @@ Beklenen metotlar:
 - `CancelPlanReminderUseCase`
 - `HandlePlanReminderLifecycleUseCase`
 
+Lifecycle event routing (deterministic):
+
+- `created` -> schedule
+- `edited` -> update (cancel + schedule if still actionable)
+- `postponed` -> update
+- `deleted` -> cancel
+- `completed` -> cancel
+- `canceled` -> cancel
+
 ## Data Policy
 
 Notification state local-only tutulur:

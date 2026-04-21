@@ -1,15 +1,21 @@
 import 'package:planandact/core/logging/logger.dart';
 import 'package:planandact/core/result/result.dart';
+import 'package:planandact/features/video_of_the_day/application/services/daily_video_theme_resolver.dart';
 import 'package:planandact/features/video_of_the_day/data/sources/remote_video_data_source.dart';
 import 'package:planandact/features/video_of_the_day/domain/entities/video_entity.dart';
 import 'package:planandact/features/video_of_the_day/domain/repositories/video_repository.dart';
 
 /// Orchestrates the fetch, cache, and fallback strategy for the daily video.
 class FetchDailyVideoUseCase {
-  const FetchDailyVideoUseCase(this._repo, this._remoteSource);
+  const FetchDailyVideoUseCase(
+    this._repo,
+    this._remoteSource,
+    this._themeResolver,
+  );
 
   final VideoRepository _repo;
   final RemoteVideoDataSource _remoteSource;
+  final DailyVideoThemeResolver _themeResolver;
   static const _tag = 'FetchDailyVideoUseCase';
 
   Future<VideoEntity?> call(DateTime date) async {
@@ -22,11 +28,18 @@ class FetchDailyVideoUseCase {
 
     // 2. Not in cache for today, fetch from remote
     try {
-      final remoteVideo = await _remoteSource.fetchDailyVideo(date);
+      final theme = _themeResolver.resolveForDate(date);
+      final remoteVideo = await _remoteSource.fetchDailyVideo(
+        date,
+        theme: theme,
+      );
       
       // Cache it
       await _repo.cacheDailyVideo(date, remoteVideo);
-      AppLogger.info(_tag, 'Fetched and cached new daily video for $date');
+      AppLogger.info(
+        _tag,
+        'Fetched and cached new daily video for $date using theme=$theme',
+      );
       
       return remoteVideo;
     } catch (e, st) {
