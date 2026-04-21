@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planandact/core/errors/failure.dart';
 import 'package:planandact/core/result/result.dart';
+import 'package:planandact/features/video_of_the_day/application/services/daily_video_theme_resolver.dart';
 import 'package:planandact/features/video_of_the_day/application/use_cases/fetch_daily_video_use_case.dart';
 import 'package:planandact/features/video_of_the_day/data/sources/remote_video_data_source.dart';
 import 'package:planandact/features/video_of_the_day/domain/entities/video_entity.dart';
@@ -8,18 +9,18 @@ import 'package:planandact/features/video_of_the_day/domain/repositories/video_r
 
 class MockFailingRemoteSource implements RemoteVideoDataSource {
   @override
-  Future<VideoEntity> fetchDailyVideo(DateTime targetDate) async {
+  Future<VideoEntity> fetchDailyVideo(DateTime targetDate, {required String theme}) async {
     throw Exception('API Quota Exceeded');
   }
 }
 
 class MockWorkingRemoteSource implements RemoteVideoDataSource {
   @override
-  Future<VideoEntity> fetchDailyVideo(DateTime targetDate) async {
+  Future<VideoEntity> fetchDailyVideo(DateTime targetDate, {required String theme}) async {
     return VideoEntity(
       id: 'remote_1',
       youtubeVideoId: '123',
-      title: 'Remote Video',
+      title: '$theme Remote Video',
       description: 'Desc',
       thumbnailUrl: 'url',
       channelTitle: 'channel',
@@ -59,6 +60,8 @@ class MockVideoRepository implements VideoRepository {
 }
 
 void main() {
+  final referenceMonday = DateTime.utc(2026, 4, 20);
+
   group('FetchDailyVideoUseCase', () {
     test('Returns cached video if found for today', () async {
       final repo = MockVideoRepository();
@@ -74,9 +77,13 @@ void main() {
         topics: [],
       );
       final remote = MockFailingRemoteSource();
-      final useCase = FetchDailyVideoUseCase(repo, remote);
+      final useCase = FetchDailyVideoUseCase(
+        repo,
+        remote,
+        const DailyVideoThemeResolver(),
+      );
 
-      final result = await useCase.call(DateTime.now());
+      final result = await useCase.call(referenceMonday);
       
       expect(result?.id, 'local_1');
       expect(result?.title, 'Local Cached Video');
@@ -87,12 +94,16 @@ void main() {
       // local cache is empty
       repo.todayVideo = null;
       final remote = MockWorkingRemoteSource();
-      final useCase = FetchDailyVideoUseCase(repo, remote);
+      final useCase = FetchDailyVideoUseCase(
+        repo,
+        remote,
+        const DailyVideoThemeResolver(),
+      );
 
-      final result = await useCase.call(DateTime.now());
+      final result = await useCase.call(referenceMonday);
       
       expect(result?.id, 'remote_1');
-      expect(result?.title, 'Remote Video');
+      expect(result?.title, 'focus Remote Video');
     });
 
     test('Falls back to last safe cached video if remote fails', () async {
@@ -114,9 +125,13 @@ void main() {
       );
 
       final remote = MockFailingRemoteSource(); // simulate API down
-      final useCase = FetchDailyVideoUseCase(repo, remote);
+      final useCase = FetchDailyVideoUseCase(
+        repo,
+        remote,
+        const DailyVideoThemeResolver(),
+      );
 
-      final result = await useCase.call(DateTime.now());
+      final result = await useCase.call(referenceMonday);
       
       expect(result?.id, 'fallback_1');
       expect(result?.title, 'Safe Fallback Video');

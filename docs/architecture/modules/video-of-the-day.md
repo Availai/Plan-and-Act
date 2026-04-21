@@ -64,6 +64,24 @@ Sorumluluklari:
 - `leadership`
 - `consistency`
 
+## Deterministic Daily Theme Mapping (v1)
+
+Gun bazli tema secimi deterministic olmalidir. V1 icin kural:
+
+- Monday -> `focus`
+- Tuesday -> `discipline`
+- Wednesday -> `action`
+- Thursday -> `resilience`
+- Friday -> `learning`
+- Saturday -> `leadership`
+- Sunday -> `consistency`
+
+Notlar:
+
+- Tum istemciler UTC weekday uzerinden ayni sonucu uretir.
+- Remote tarafta ilgili tema ile filtrelenmis video secimi istenir.
+- Bu strateji random secime gore daha aciklanabilir analytics davranisi verir.
+
 ## Data Flow
 
 1. backend veya edge function video metadata getirir

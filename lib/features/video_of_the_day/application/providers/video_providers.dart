@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:planandact/features/planning/application/providers/database_provider.dart';
+import 'package:planandact/features/video_of_the_day/application/services/daily_video_theme_resolver.dart';
 import 'package:planandact/features/video_of_the_day/application/use_cases/fetch_daily_video_use_case.dart';
 import 'package:planandact/features/video_of_the_day/application/use_cases/log_video_impression_use_case.dart';
 import 'package:planandact/features/video_of_the_day/data/repositories/drift_video_repository.dart';
@@ -24,11 +25,16 @@ final remoteVideoDataSourceProvider = Provider<RemoteVideoDataSource>((ref) {
   return MockRemoteVideoDataSource();
 });
 
+final dailyVideoThemeResolverProvider = Provider<DailyVideoThemeResolver>((ref) {
+  return const DailyVideoThemeResolver();
+});
+
 /// Provides the FetchDailyVideoUseCase.
 final fetchDailyVideoUseCaseProvider = Provider<FetchDailyVideoUseCase>((ref) {
   final repo = ref.watch(videoRepositoryProvider);
   final remote = ref.watch(remoteVideoDataSourceProvider);
-  return FetchDailyVideoUseCase(repo, remote);
+  final themeResolver = ref.watch(dailyVideoThemeResolverProvider);
+  return FetchDailyVideoUseCase(repo, remote, themeResolver);
 });
 
 /// Provides the LogVideoImpressionUseCase.
