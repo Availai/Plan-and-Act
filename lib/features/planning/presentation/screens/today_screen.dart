@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:planandact/app/theme/app_colors.dart';
 import 'package:planandact/app/theme/app_spacing.dart';
-import 'package:planandact/features/planning/application/providers/planning_providers.dart';
 import 'package:planandact/features/planning/application/providers/use_case_providers.dart';
 import 'package:planandact/features/planning/presentation/providers/today_dashboard_providers.dart';
 import 'package:planandact/features/planning/presentation/widgets/add_plan_sheet.dart';
 import 'package:planandact/features/planning/presentation/widgets/plan_list_tile.dart';
+import 'package:planandact/features/video_of_the_day/application/providers/video_providers.dart';
 import 'package:planandact/shared/presentation/widgets/empty_state_view.dart';
 import 'package:planandact/shared/presentation/widgets/video_of_the_day_card.dart';
 import 'package:planandact/shared/presentation/widgets/wisdom_card.dart';
@@ -15,20 +16,62 @@ import 'package:planandact/shared/presentation/widgets/wisdom_card.dart';
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
+  Future<void> _openVideo(
+    BuildContext context,
+    WidgetRef ref,
+    String url,
+    String videoId,
+  ) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Geçersiz video bağlantısı.')),
+      );
+      return;
+    }
+
+    await ref.read(logVideoImpressionUseCaseProvider).call(
+          userId: 'local_user',
+          videoId: videoId,
+          eventType: 'open',
+        );
+
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Video açılamadı. Lütfen tekrar deneyin.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final videoAsync = ref.watch(currentDailyVideoProvider);
     final wisdomAsync = ref.watch(currentWisdomDecisionProvider);
-    final plansAsync = ref.watch(todayPlansProvider);
-    
+    final plansAsync = ref.watch(selectedDatePlansProvider);
+    final selectedDate = ref.watch(selectedDashboardDateProvider);
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    // Header Data
+
     final now = DateTime.now();
     final formatter = DateFormat('d MMMM', 'tr');
-    final formattedDate = formatter.format(now);
+    final formattedDate = formatter.format(selectedDate);
 
     return Scaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => AddPlanSheet.show(
+          context,
+          selectedDate: selectedDate,
+        ),
+        backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+        foregroundColor: isDark ? Colors.white : Colors.black,
+        icon: const Icon(Icons.add),
+        label: const Text(
+          'Görev Ekle',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(
@@ -88,54 +131,71 @@ class TodayScreen extends ConsumerWidget {
                   itemCount: 14,
                   itemBuilder: (context, index) {
                     final date = now.subtract(Duration(days: 3)).add(Duration(days: index));
-                    final isToday = date.day == now.day && date.month == now.month;
+                    final isSelected = date.year == selectedDate.year &&
+                        date.month == selectedDate.month &&
+                        date.day == selectedDate.day;
                     final dayStr = DateFormat('E', 'tr').format(date).toUpperCase();
-                    
-                    return Container(
-                      width: 50,
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        color: isToday 
-                            ? AppColors.primary 
-                            : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isToday ? AppColors.primary : (isDark ? AppColors.borderDark : AppColors.borderLight),
-                        ),
-                        boxShadow: isToday ? [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 4)
-                          )
-                        ] : null,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            dayStr,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: isToday 
-                                  ? Colors.white 
-                                  : (isDark ? AppColors.textMediumEmphasisDark : AppColors.textMediumEmphasisLight),
-                            ),
+
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        ref.read(selectedDashboardDateProvider.notifier).state =
+                            DateTime(date.year, date.month, date.day);
+                      },
+                      child: Container(
+                        width: 50,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary
+                              : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : (isDark ? AppColors.borderDark : AppColors.borderLight),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${date.day}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: isToday 
-                                  ? Colors.white 
-                                  : (isDark ? AppColors.textHighEmphasisDark : AppColors.textHighEmphasisLight),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              dayStr,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark
+                                        ? AppColors.textMediumEmphasisDark
+                                        : AppColors.textMediumEmphasisLight),
+                              ),
                             ),
-                          )
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              '${date.day}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark
+                                        ? AppColors.textHighEmphasisDark
+                                        : AppColors.textHighEmphasisLight),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -148,7 +208,11 @@ class TodayScreen extends ConsumerWidget {
               child: VideoOfTheDayCard(
                 video: videoAsync.valueOrNull,
                 isLoading: videoAsync.isLoading,
-                onTap: () {},
+                onTap: () {
+                  final video = videoAsync.valueOrNull;
+                  if (video == null) return;
+                  _openVideo(context, ref, video.canonicalUrl, video.id);
+                },
               ),
             ),
             SliverToBoxAdapter(
@@ -193,7 +257,6 @@ class TodayScreen extends ConsumerWidget {
                           plan: plan,
                           onToggleComplete: (val) {
                             if (val) {
-                              ref.read(completePlanProvider(plan.id));
                               ref.read(markPlanCompletedUseCaseProvider).call(plan.id);
                             }
                           },
@@ -209,48 +272,6 @@ class TodayScreen extends ConsumerWidget {
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
-        ),
-      ),
-      // Integrate floating Add Bar instead of standard FAB
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: InkWell(
-        onTap: () => AddPlanSheet.show(context),
-        borderRadius: BorderRadius.circular(30),
-        child: Container(
-          height: 60,
-          width: MediaQuery.of(context).size.width * 0.5,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                spreadRadius: 5,
-                offset: const Offset(0, 5),
-              )
-            ],
-            border: Border.all(
-              color: isDark ? Colors.white10 : AppColors.borderLight,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.add,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-              const SizedBox(width: AppSpacing.s),
-              Text(
-                'Görev Ekle',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              )
-            ],
-          ),
         ),
       ),
     );
