@@ -5,9 +5,13 @@ import 'package:planandact/app/theme/app_spacing.dart';
 import 'package:planandact/features/planning/application/providers/use_case_providers.dart';
 import 'package:planandact/features/planning/domain/entities/plan_entity.dart';
 import 'package:planandact/features/planning/domain/value_objects/plan_status.dart';
+import 'package:planandact/shared/presentation/widgets/app_backdrop.dart';
 
 class PlanDetailScreen extends ConsumerWidget {
-  const PlanDetailScreen({super.key, required this.plan});
+  const PlanDetailScreen({
+    super.key,
+    required this.plan,
+  });
 
   final PlanEntity plan;
 
@@ -15,7 +19,7 @@ class PlanDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Plan Detayı'),
+        title: const Text('Plan Detayi'),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded),
@@ -23,70 +27,81 @@ class PlanDetailScreen extends ConsumerWidget {
               ref.read(deletePlanUseCaseProvider).call(plan.id);
               Navigator.pop(context);
             },
-          )
+          ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.l),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              plan.title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+      body: AppBackdrop(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                plan.title,
+                style: Theme.of(context).textTheme.headlineLarge,
+              ),
+              const SizedBox(height: AppSpacing.s),
+              Wrap(
+                spacing: AppSpacing.s,
+                runSpacing: AppSpacing.s,
+                children: [
+                  _buildChip(context, plan.status.name.toUpperCase(), AppColors.statusColor(plan.status.name)),
+                  _buildChip(context, plan.priority.name.toUpperCase(), AppColors.warning),
+                  if (plan.durationMinutes != null)
+                    _buildChip(context, '${plan.durationMinutes} dk', AppColors.panelOverlay),
+                  if (plan.scheduledTimeLocal.isNotEmpty)
+                    _buildChip(context, plan.scheduledTimeLocal, AppColors.accentCyan),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                'Aciklama',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: AppSpacing.s),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.l),
+                decoration: BoxDecoration(
+                  color: AppColors.panelBackground.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.borderSubtle),
+                ),
+                child: Text(
+                  plan.description.isNotEmpty
+                      ? plan.description
+                      : 'Aciklama veya not eklenmemis.',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              if (plan.status == PlanStatus.planned || plan.status == PlanStatus.postponed) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () async {
+                      await ref.read(markPlanCompletedUseCaseProvider).call(plan.id);
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                    icon: const Icon(Icons.check_circle_rounded),
+                    label: const Text('Hedefi Tamamla'),
                   ),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Row(
-              children: [
-                _buildChip(context, plan.status.name.toUpperCase(), _getStatusColor(plan.status)),
-                const SizedBox(width: AppSpacing.s),
-                _buildChip(context, plan.priority.name.toUpperCase(), Colors.amber),
-                if (plan.durationMinutes != null) ...[
-                  const SizedBox(width: AppSpacing.s),
-                  _buildChip(context, '${plan.durationMinutes} dk', Colors.grey),
-                ]
+                ),
+                const SizedBox(height: AppSpacing.m),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Geri Don'),
+                  ),
+                ),
               ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              'Açıklama',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.textMediumEmphasisLight),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Text(
-              plan.description.isNotEmpty ? plan.description : 'Açıklama veya not eklenmemiş.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            
-            // Action Buttons
-            if (plan.status == PlanStatus.planned) ...[
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    ref.read(markPlanCompletedUseCaseProvider).call(plan.id);
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.check_circle_rounded),
-                  label: const Text('Hedefi Tamamla'),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.m),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    // ref.read(postponePlanUseCaseProvider).call(plan.id) vs
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Ertele'),
-                ),
-              ),
-            ]
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -96,28 +111,14 @@ class PlanDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(100),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-        ),
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
       ),
     );
-  }
-
-  Color _getStatusColor(PlanStatus status) {
-    switch (status) {
-      case PlanStatus.completed: return Colors.green;
-      case PlanStatus.canceled: return Colors.red;
-      case PlanStatus.postponed: return Colors.orange;
-      case PlanStatus.planned: return Colors.blue;
-      case PlanStatus.skipped: return Colors.grey;
-    }
   }
 }

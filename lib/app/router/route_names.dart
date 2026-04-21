@@ -8,4 +8,6 @@ class RouteNames {
   static const String stuck = '/stuck';
   static const String planDetail = '/plan/:planId';
   static const String settings = '/settings';
+
+  static String planDetailPath(String planId) => '/plan/$planId';
 }

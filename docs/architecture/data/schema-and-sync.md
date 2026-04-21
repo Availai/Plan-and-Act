@@ -2,12 +2,10 @@
 
 ## Canonical Direction
 
-Canonical remote model `Postgres`, canonical local runtime model `Drift` olacak.
+- local runtime model: `Drift`
+- remote sync model: `Postgres`
 
-Pratikte:
-
-- local taraf hiz ve offline davranis icin ana calisma zemini
-- remote taraf sync, auth, seed data ve analytics toplama icin ana sistem
+The app behaves local-first. Remote exists for sync, analytics, auth, and server-owned seed data.
 
 ## Syncable Table Groups
 
@@ -23,9 +21,6 @@ Pratikte:
 - `wisdom_rule_weights`
 - `wisdom_synonyms`
 - `wisdom_keyword_map`
-- `video_candidates`
-- `video_topics`
-- `daily_video_selection`
 
 ### User-Owned Syncable
 
@@ -37,13 +32,11 @@ Pratikte:
 - `quote_usage_history`
 - `decision_logs`
 - `decision_log_candidates`
-- `video_impressions`
 - `streak_snapshots`
 
 ### Local-Only
 
 - `notifications`
-- `daily_video_cache`
 - `sync_queue`
 
 ## Planning Tables
@@ -72,58 +65,40 @@ Pratikte:
 - `decision_logs`
 - `decision_log_candidates`
 
-## Video Tables
-
-- `video_candidates`
-- `video_topics`
-- `video_candidate_topics`
-- `daily_video_selection`
-- `video_impressions`
-- `daily_video_cache`
-
 ## Notification Tables
 
 - `notifications`
 
-## Core Column Policy
+## Migration Note
 
-Tum syncable tablolarda:
+Schema version `2` removes the old video tables:
 
-- `id`
-- `created_at`
-- `updated_at`
-- `deleted_at?`
-- `version`
+- `video_candidates`
+- `video_topics`
+- `video_candidate_topics`
+- `daily_video_selections`
+- `video_impressions`
+- `daily_video_cache`
 
-Plan ve reminder zamanlarinda:
-
-- `scheduled_date`
-- `scheduled_time_local`
-- `scheduled_timezone`
-- `scheduled_at_utc`
+Planning, wisdom, and notification data remain intact during the upgrade.
 
 ## Conflict Policy
 
 ### Plans
 
 - optimistic sync
-- `version` ve `updated_at` birlikte kullanilir
-- edit alanlarinda latest valid write wins
+- `version` plus `updated_at`
+- latest valid write wins for mutable fields
 
 ### Status History
 
-- overwrite edilmez
-- append-only tutulur
+- append-only
+- never overwritten
 
 ### Quote Usage / Decision Logs
 
-- event-style oldugu icin merge edilir
-- overwrite mantigi uygulanmaz
-
-### Seed Data
-
-- client tarafindan yazilmaz
-- server-owned kabul edilir
+- event-style merge
+- no overwrite semantics
 
 ## Minimum Index Set
 
@@ -134,14 +109,4 @@ Plan ve reminder zamanlarinda:
 - `quote_usage_history(user_id, quote_id, created_at desc)`
 - `decision_logs(user_id, created_at desc)`
 - `decision_log_candidates(decision_log_id, total_score desc)`
-- `daily_video_selection(selection_date)`
 - `notifications(plan_id, status)`
-
-## Why This Matters
-
-Bu schema omurgasi olmadan:
-
-- Wisdom Engine explainability kaydi tutulamaz
-- reminder lifecycle saglamlasmaz
-- local-first davranis buyuyemez
-- sync sonrasi veri drift'i artar

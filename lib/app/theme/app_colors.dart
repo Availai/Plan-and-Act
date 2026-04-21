@@ -1,62 +1,68 @@
 import 'package:flutter/material.dart';
 
-/// Semantic color palette for Plan and Act.
+/// Dracula-inspired semantic palette for Plan and Act.
 /// Focus & Flow - Linear/Apple Minimalist Aesthetic
 class AppColors {
   AppColors._();
 
-  // Branding Core
-  static const Color primary = Color(0xFF5856D6); // Modern Indigo
-  static const Color primaryLight = Color(0xFF6E6CDA);
-  
-  static const Color accentBlue = Color(0xFF0A84FF); // iOS Blue action
-  static const Color accentGreen = Color(0xFF34C759); // Emerald Green
-  static const Color accentAmber = Color(0xFFFF9F0A);
-  static const Color accentRed = Color(0xFFFF453A); // Destructive action
-  static const Color neonCyan = Color(0xFF22D3EE);
-  static const Color neonPink = Color(0xFFFF4DCE);
-  static const Color neonLime = Color(0xFFA3E635);
-  static const Color neonOrange = Color(0xFFFF7A18);
+  static const Color pageBackground = Color(0xFF282A36);
+  static const Color pageBackgroundDeep = Color(0xFF232530);
+  static const Color panelBackground = Color(0xFF1E1F29);
+  static const Color panelElevated = Color(0xFF343746);
+  static const Color panelOverlay = Color(0xFF44475A);
+  static const Color borderSubtle = Color(0xFF4C5070);
 
-  // Backgrounds - Light Mode (Modern Paper)
-  static const Color backgroundLight = Color(0xFFFFFFFF); // Pure White
-  static const Color surfaceLight = Color(0xFFF2F2F7); // iOS Grouped Background
-  
-  // Backgrounds - Dark Mode (OLED Deep)
-  static const Color backgroundDark = Color(0xFF000000); // OLED True Black
-  static const Color surfaceDark = Color(0xFF1C1C1E); // Elevated Surface
+  static const Color textPrimary = Color(0xFFF8F8F2);
+  static const Color textSecondary = Color(0xFFB8C1EC);
+  static const Color textMuted = Color(0xFF7F88B5);
 
-  // Priorities
-  static const Color priorityHigh = accentRed;
-  static const Color priorityMedium = accentAmber;
-  static const Color priorityLow = accentBlue;
+  static const Color accentCyan = Color(0xFF8BE9FD);
+  static const Color accentPink = Color(0xFFFF79C6);
+  static const Color accentPurple = Color(0xFFBD93F9);
+  static const Color success = Color(0xFF50FA7B);
+  static const Color warning = Color(0xFFFFB86C);
+  static const Color danger = Color(0xFFFF5555);
 
-  // Typography - Light
-  static const Color textHighEmphasisLight = Color(0xFF000000);
-  static const Color textMediumEmphasisLight = Color(0xFF8E8E93);
-  static const Color textLowEmphasisLight = Color(0xFFC7C7CC);
+  static const Color primary = accentPurple;
+  static const Color info = accentCyan;
+  static const Color priorityHigh = danger;
+  static const Color priorityMedium = warning;
+  static const Color priorityLow = accentCyan;
 
-  // Typography - Dark
-  static const Color textHighEmphasisDark = Color(0xFFFFFFFF);
-  static const Color textMediumEmphasisDark = Color(0xFF8E8E93);
-  static const Color textLowEmphasisDark = Color(0xFF636366);
+  static const Color shimmerBase = Color(0xFF2E3140);
+  static const Color shimmerHighlight = Color(0xFF41455A);
 
-  // Borders & Dividers
-  static const Color borderLight = Color(0xFFE5E5EA);
-  static const Color borderDark = Color(0xFF38383A);
+  static const Color actionForeground = pageBackground;
 
-  static Color laneColor(String? laneId, {required bool isDark}) {
+  static Color laneColor(String? laneId) {
     switch (laneId) {
       case 'critical':
-        return isDark ? neonPink : accentRed;
+        return accentPink;
       case 'must_do':
-        return isDark ? neonCyan : primary;
+        return accentCyan;
       case 'challenging':
-        return isDark ? neonOrange : accentAmber;
+        return warning;
       case 'chore_useful':
-        return isDark ? neonLime : accentGreen;
+        return success;
       default:
-        return isDark ? neonCyan : primary;
+        return accentPurple;
+    }
+  }
+
+  static Color statusColor(String statusName) {
+    switch (statusName) {
+      case 'completed':
+        return success;
+      case 'canceled':
+        return danger;
+      case 'postponed':
+        return warning;
+      case 'planned':
+        return accentCyan;
+      case 'skipped':
+        return panelOverlay;
+      default:
+        return textMuted;
     }
   }
 }

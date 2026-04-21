@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:planandact/shared/presentation/widgets/app_backdrop.dart';
 import 'package:planandact/shared/presentation/widgets/empty_state_view.dart';
 
 class MomentumScreen extends StatelessWidget {
@@ -9,10 +9,12 @@ class MomentumScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Momentum')),
-      body: const EmptyStateView(
-        title: 'Momentumunuz Henüz Hesaplanıyor',
-        message: 'Görevleri tamamlamaya devam ettikçe burada serileriniz (streak) ve momentum puanınız belirecek.',
-        icon: Icons.local_fire_department_rounded,
+      body: const AppBackdrop(
+        child: EmptyStateView(
+          title: 'Momentum hesaplanmaya hazir',
+          message: 'Tamamlanan planlar arttikca seri ve ritim metrikleri burada gorunecek.',
+          icon: Icons.local_fire_department_rounded,
+        ),
       ),
     );
   }

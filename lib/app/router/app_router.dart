@@ -1,15 +1,14 @@
-import 'package:planandact/features/planning/presentation/screens/home_shell.dart';
 import 'package:go_router/go_router.dart';
 import 'package:planandact/app/router/route_names.dart';
+import 'package:planandact/features/planning/presentation/screens/home_shell.dart';
 import 'package:planandact/features/planning/presentation/screens/momentum_screen.dart';
+import 'package:planandact/features/planning/presentation/screens/plan_detail_route_screen.dart';
 import 'package:planandact/features/planning/presentation/screens/reflection_screen.dart';
 import 'package:planandact/features/planning/presentation/screens/stuck_screen.dart';
 import 'package:planandact/features/planning/presentation/screens/today_screen.dart';
 import 'package:planandact/features/settings/presentation/screens/settings_screen.dart';
 
 /// Application-level router configuration.
-///
-/// Uses ShellRoute for bottom-navigation layout with persistent shell.
 final appRouter = GoRouter(
   initialLocation: RouteNames.today,
   routes: [
@@ -21,7 +20,6 @@ final appRouter = GoRouter(
           pageBuilder: (context, state) => const NoTransitionPage(
             child: TodayScreen(),
           ),
-
         ),
         GoRoute(
           path: RouteNames.reflection,
@@ -44,10 +42,15 @@ final appRouter = GoRouter(
       ],
     ),
     GoRoute(
+      path: RouteNames.planDetail,
+      builder: (context, state) {
+        final planId = state.pathParameters['planId']!;
+        return PlanDetailRouteScreen(planId: planId);
+      },
+    ),
+    GoRoute(
       path: RouteNames.settings,
       builder: (context, state) => const SettingsScreen(),
     ),
   ],
 );
-
-

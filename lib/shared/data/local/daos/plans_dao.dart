@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:planandact/shared/data/local/app_database.dart';
-import 'package:planandact/shared/data/local/tables/plans_table.dart';
 import 'package:planandact/shared/data/local/tables/plan_status_history_table.dart';
+import 'package:planandact/shared/data/local/tables/plans_table.dart';
 
 part 'plans_dao.g.dart';
 
@@ -18,6 +18,12 @@ class PlansDao extends DatabaseAccessor<AppDatabase> with _$PlansDaoMixin {
         .get();
   }
 
+  Future<Plan?> getPlanById(String planId) {
+    return (select(plans)
+          ..where((p) => p.id.equals(planId) & p.deletedAt.isNull()))
+        .getSingleOrNull();
+  }
+
   /// Returns plans for a specific date.
   Future<List<Plan>> getPlansForDate(String userId, DateTime date) {
     final startOfDay = DateTime(date.year, date.month, date.day);
@@ -28,7 +34,8 @@ class PlansDao extends DatabaseAccessor<AppDatabase> with _$PlansDaoMixin {
               p.userId.equals(userId) &
               p.scheduledDate.isBiggerOrEqualValue(startOfDay) &
               p.scheduledDate.isSmallerThanValue(endOfDay) &
-              p.deletedAt.isNull()))
+              p.deletedAt.isNull())
+          ..orderBy([(p) => OrderingTerm.asc(p.scheduledAtUtc)]))
         .get();
   }
 
@@ -40,6 +47,13 @@ class PlansDao extends DatabaseAccessor<AppDatabase> with _$PlansDaoMixin {
               p.postponedCount.isBiggerOrEqualValue(2) &
               p.deletedAt.isNull())
           ..orderBy([(p) => OrderingTerm.desc(p.postponedCount)]))
+        .get();
+  }
+
+  Future<List<Plan>> getPlansByStatus(String status) {
+    return (select(plans)
+          ..where((p) => p.status.equals(status) & p.deletedAt.isNull())
+          ..orderBy([(p) => OrderingTerm.desc(p.updatedAt)]))
         .get();
   }
 
@@ -89,7 +103,10 @@ class PlansDao extends DatabaseAccessor<AppDatabase> with _$PlansDaoMixin {
 
   /// Counts completed plans within a date range for streak calculation.
   Future<int> countCompletedInRange(
-      String userId, DateTime start, DateTime end) async {
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) async {
     final query = selectOnly(plans)
       ..addColumns([plans.id.count()])
       ..where(plans.userId.equals(userId) &

@@ -5,7 +5,10 @@ import 'package:planandact/app/theme/app_colors.dart';
 
 /// Persistent shell with bottom navigation for the main app tabs.
 class HomeShell extends StatelessWidget {
-  const HomeShell({super.key, required this.child});
+  const HomeShell({
+    super.key,
+    required this.child,
+  });
 
   final Widget child;
 
@@ -19,11 +22,11 @@ class HomeShell extends StatelessWidget {
   static const _destinations = <NavigationDestination>[
     NavigationDestination(
       icon: Icon(Icons.today_rounded),
-      label: 'Bugün',
+      label: 'Bugun',
     ),
     NavigationDestination(
       icon: Icon(Icons.self_improvement_rounded),
-      label: 'Yansıma',
+      label: 'Yansima',
     ),
     NavigationDestination(
       icon: Icon(Icons.bolt_rounded),
@@ -31,31 +34,44 @@ class HomeShell extends StatelessWidget {
     ),
     NavigationDestination(
       icon: Icon(Icons.warning_amber_rounded),
-      label: 'Durum',
+      label: 'Stuck',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final location =
-        GoRouterState.of(context).uri.toString();
+    final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _locationToIndex(location);
 
     return Scaffold(
       body: SafeArea(child: child),
-
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) {
-          final routes = [
-            RouteNames.today,
-            RouteNames.reflection,
-            RouteNames.momentum,
-            RouteNames.stuck,
-          ];
-          context.go(routes[index]);
-        },
-        destinations: _destinations,
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.panelBackground.withValues(alpha: 0.96),
+          border: const Border(
+            top: BorderSide(color: AppColors.borderSubtle),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.pageBackground.withValues(alpha: 0.34),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: currentIndex,
+          onDestinationSelected: (index) {
+            final routes = [
+              RouteNames.today,
+              RouteNames.reflection,
+              RouteNames.momentum,
+              RouteNames.stuck,
+            ];
+            context.go(routes[index]);
+          },
+          destinations: _destinations,
+        ),
       ),
     );
   }

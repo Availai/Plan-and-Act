@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:planandact/shared/presentation/widgets/app_backdrop.dart';
 import 'package:planandact/shared/presentation/widgets/empty_state_view.dart';
 
 class StuckScreen extends StatelessWidget {
@@ -7,11 +8,13 @@ class StuckScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tıkanıklıktan Kurtul')),
-      body: const EmptyStateView(
-        title: 'Şu an iyisiniz!',
-        message: 'Sistem son zamanlarda büyük bir erteleme veya iptal döngüsü (Tıkanıklık) tespit etmedi.\nEğer takılırsanız, Bilgelik Motoru buradan size stratejik tavsiyeler verecek.',
-        icon: Icons.psychology_rounded,
+      appBar: AppBar(title: const Text('Tikaniklik')),
+      body: const AppBackdrop(
+        child: EmptyStateView(
+          title: 'Simdilik temiz',
+          message: 'Sistem aktif bir erteleme dongusu tespit etmedi. Takildiginda bu alan stratejik toparlanma onerecek.',
+          icon: Icons.psychology_alt_rounded,
+        ),
       ),
     );
   }

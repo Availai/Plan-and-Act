@@ -29,41 +29,41 @@ class _PlanListTileState extends State<PlanListTile> {
   bool _expanded = false;
 
   Color _getPriorityColor() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final laneColor = AppColors.laneColor(widget.plan.categoryId, isDark: isDark);
     switch (widget.plan.priority) {
       case PlanPriority.high:
       case PlanPriority.critical:
-        return laneColor;
+        return AppColors.danger;
       case PlanPriority.medium:
-        return laneColor;
+        return AppColors.warning;
       case PlanPriority.low:
-        return laneColor;
+        return AppColors.laneColor(widget.plan.categoryId);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isCompleted = widget.plan.status == PlanStatus.completed;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final baseOpacity = isCompleted ? 0.3 : 1.0;
-    
-    final tileColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
-    final borderColor = isDark ? Colors.white10 : AppColors.borderLight;
+    final baseOpacity = isCompleted ? 0.42 : 1.0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
       decoration: BoxDecoration(
-        color: tileColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor),
+        color: AppColors.panelBackground.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.pageBackground.withValues(alpha: 0.16),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
           child: Slidable(
             key: ValueKey(widget.plan.id),
             startActionPane: ActionPane(
@@ -74,9 +74,11 @@ class _PlanListTileState extends State<PlanListTile> {
                     HapticFeedback.mediumImpact();
                     widget.onToggleComplete(!isCompleted);
                   },
-                  backgroundColor: AppColors.accentGreen,
-                  foregroundColor: Colors.white,
-                  icon: isCompleted ? Icons.restart_alt_rounded : Icons.check_circle_rounded,
+                  backgroundColor: AppColors.success,
+                  foregroundColor: AppColors.actionForeground,
+                  icon: isCompleted
+                      ? Icons.restart_alt_rounded
+                      : Icons.check_circle_rounded,
                   label: isCompleted ? 'Geri Al' : 'Tamamla',
                 ),
               ],
@@ -89,18 +91,18 @@ class _PlanListTileState extends State<PlanListTile> {
                     HapticFeedback.lightImpact();
                     widget.onEdit();
                   },
-                  backgroundColor: AppColors.accentBlue,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.info,
+                  foregroundColor: AppColors.actionForeground,
                   icon: Icons.edit_rounded,
-                  label: 'Düzenle',
+                  label: 'Duzenle',
                 ),
                 SlidableAction(
                   onPressed: (_) {
                     HapticFeedback.heavyImpact();
                     widget.onDelete();
                   },
-                  backgroundColor: AppColors.accentRed,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.danger,
+                  foregroundColor: AppColors.actionForeground,
                   icon: Icons.delete_outline_rounded,
                   label: 'Sil',
                 ),
@@ -114,7 +116,7 @@ class _PlanListTileState extends State<PlanListTile> {
                 HapticFeedback.selectionClick();
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.all(AppSpacing.m),
                 child: Column(
@@ -122,102 +124,101 @@ class _PlanListTileState extends State<PlanListTile> {
                   children: [
                     Row(
                       children: [
-                        // Priority Indicator line
                         Container(
-                          width: 3,
-                          height: 24,
+                          width: 4,
+                          height: 38,
                           decoration: BoxDecoration(
                             color: _getPriorityColor().withValues(alpha: baseOpacity),
-                            borderRadius: BorderRadius.circular(1.5),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.m),
-                        
-                        // Main Title & Time
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 widget.plan.title,
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark 
-                                          ? AppColors.textHighEmphasisDark.withValues(alpha: baseOpacity) 
-                                          : AppColors.textHighEmphasisLight.withValues(alpha: baseOpacity),
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: AppColors.textPrimary.withValues(alpha: baseOpacity),
                                     ),
                               ),
-                              if (widget.plan.scheduledTimeLocal.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.schedule_rounded,
-                                      size: 14,
-                                      color: isDark 
-                                          ? AppColors.textMediumEmphasisDark.withValues(alpha: baseOpacity)
-                                          : AppColors.textMediumEmphasisLight.withValues(alpha: baseOpacity),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      widget.plan.scheduledTimeLocal,
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            color: isDark 
-                                                ? AppColors.textMediumEmphasisDark.withValues(alpha: baseOpacity)
-                                                : AppColors.textMediumEmphasisLight.withValues(alpha: baseOpacity),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ]
+                              const SizedBox(height: AppSpacing.xxs),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.schedule_rounded,
+                                    size: 14,
+                                    color: AppColors.textMuted.withValues(alpha: baseOpacity),
+                                  ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Text(
+                                    widget.plan.scheduledTimeLocal.isEmpty
+                                        ? 'Saat net degil'
+                                        : widget.plan.scheduledTimeLocal,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: AppColors.textSecondary
+                                              .withValues(alpha: baseOpacity),
+                                        ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                        
-                        // Unobtrusive completion dot
                         AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          width: 20,
-                          height: 20,
+                          duration: const Duration(milliseconds: 220),
+                          width: 22,
+                          height: 22,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isCompleted ? AppColors.accentGreen : (isDark ? AppColors.borderDark : AppColors.borderLight),
+                              color: isCompleted
+                                  ? AppColors.success
+                                  : AppColors.borderSubtle,
                               width: 2,
                             ),
-                            color: isCompleted ? AppColors.accentGreen : Colors.transparent,
+                            color: isCompleted ? AppColors.success : Colors.transparent,
                           ),
                           child: isCompleted
-                              ? const Icon(Icons.check, size: 12, color: Colors.white)
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 12,
+                                  color: AppColors.actionForeground,
+                                )
                               : null,
-                        )
+                        ),
                       ],
                     ),
-                    
-                    // Accordion Expandable Details
                     AnimatedCrossFade(
                       firstChild: const SizedBox(width: double.infinity, height: 0),
                       secondChild: Container(
-                        padding: const EdgeInsets.only(top: AppSpacing.m, left: AppSpacing.m + 3),
                         width: double.infinity,
+                        padding: const EdgeInsets.only(
+                          top: AppSpacing.m,
+                          left: AppSpacing.m,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Divider(height: 1),
                             const SizedBox(height: AppSpacing.s),
                             Text(
-                              widget.plan.description.isNotEmpty 
-                                  ? widget.plan.description 
-                                  : 'Açıklama veya ek not yok.',
+                              widget.plan.description.isEmpty
+                                  ? 'Aciklama veya ek not yok.'
+                                  : widget.plan.description,
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: (isDark ? AppColors.textMediumEmphasisDark : AppColors.textMediumEmphasisLight).withValues(alpha: baseOpacity)
-                              ),
+                                    color: AppColors.textSecondary
+                                        .withValues(alpha: baseOpacity),
+                                  ),
                             ),
                           ],
                         ),
                       ),
-                      crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                      duration: const Duration(milliseconds: 300),
+                      crossFadeState: _expanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 220),
                     ),
                   ],
                 ),

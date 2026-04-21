@@ -10,9 +10,9 @@ class PlanAndActApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'Plan and Act',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.system,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.dark,
+      theme: AppTheme.theme,
+      darkTheme: AppTheme.theme,
       routerConfig: appRouter,
     );
   }

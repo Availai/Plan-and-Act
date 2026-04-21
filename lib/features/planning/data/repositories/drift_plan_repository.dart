@@ -3,8 +3,8 @@ import 'package:planandact/core/logging/logger.dart';
 import 'package:planandact/core/result/result.dart';
 import 'package:planandact/features/planning/data/mappers/plan_mapper.dart';
 import 'package:planandact/features/planning/domain/entities/plan_entity.dart';
-import 'package:planandact/features/planning/domain/value_objects/plan_status.dart';
 import 'package:planandact/features/planning/domain/repositories/plan_repository.dart';
+import 'package:planandact/features/planning/domain/value_objects/plan_status.dart';
 import 'package:planandact/shared/data/local/daos/plans_dao.dart';
 
 /// Drift-backed implementation of [PlanRepository].
@@ -40,7 +40,7 @@ class DriftPlanRepository implements PlanRepository {
       return Success(plan);
     } catch (e, st) {
       AppLogger.error(_tag, 'Failed to update plan', e, st);
-      return Err(StorageFailure('Plan güncellenemedi', e.toString()));
+      return Err(StorageFailure('Plan guncellenemedi', e.toString()));
     }
   }
 
@@ -58,27 +58,28 @@ class DriftPlanRepository implements PlanRepository {
   @override
   Future<Result<PlanEntity>> getPlanById(String planId) async {
     try {
-      final plans = await _dao.getAllPlans(''); // TODO: filter by id
-      final match = plans.where((p) => p.id == planId).firstOrNull;
+      final match = await _dao.getPlanById(planId);
       if (match == null) {
-        return const Err(NotFoundFailure('Plan bulunamadı'));
+        return const Err(NotFoundFailure('Plan bulunamadi'));
       }
       return Success(_mapper.toDomain(match));
     } catch (e, st) {
       AppLogger.error(_tag, 'Failed to get plan by id', e, st);
-      return Err(StorageFailure('Plan okunamadı', e.toString()));
+      return Err(StorageFailure('Plan okunamadi', e.toString()));
     }
   }
 
   @override
   Future<Result<List<PlanEntity>>> getPlansForDate(
-      String userId, DateTime date) async {
+    String userId,
+    DateTime date,
+  ) async {
     try {
       final rows = await _dao.getPlansForDate(userId, date);
       return Success(_mapper.toDomainList(rows));
     } catch (e, st) {
       AppLogger.error(_tag, 'Failed to get plans for date', e, st);
-      return Err(StorageFailure('Planlar yüklenemedi', e.toString()));
+      return Err(StorageFailure('Planlar yuklenemedi', e.toString()));
     }
   }
 
@@ -89,20 +90,18 @@ class DriftPlanRepository implements PlanRepository {
       return Success(_mapper.toDomainList(rows));
     } catch (e, st) {
       AppLogger.error(_tag, 'Failed to get stuck plans', e, st);
-      return Err(StorageFailure('Stuck planlar yüklenemedi', e.toString()));
+      return Err(StorageFailure('Stuck planlar yuklenemedi', e.toString()));
     }
   }
 
   @override
   Future<Result<List<PlanEntity>>> getPlansByStatus(PlanStatus status) async {
     try {
-      // Use getAllPlans and filter for now as simple fallback since we don't have a specific dao method
-      final rows = await _dao.getAllPlans(''); // User filter if needed later
-      final match = rows.where((r) => r.status == status.name).toList();
-      return Success(_mapper.toDomainList(match));
+      final rows = await _dao.getPlansByStatus(status.name);
+      return Success(_mapper.toDomainList(rows));
     } catch (e, st) {
       AppLogger.error(_tag, 'Failed to get plans by status', e, st);
-      return Err(StorageFailure('Planlar durum ile yüklenemedi', e.toString()));
+      return Err(StorageFailure('Planlar durum ile yuklenemedi', e.toString()));
     }
   }
 
@@ -114,8 +113,7 @@ class DriftPlanRepository implements PlanRepository {
   }
 
   @override
-  Future<int> countCompletedInRange(
-      String userId, DateTime start, DateTime end) {
+  Future<int> countCompletedInRange(String userId, DateTime start, DateTime end) {
     return _dao.countCompletedInRange(userId, start, end);
   }
 }

@@ -30,16 +30,22 @@ class WisdomCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Decorative quote icon
-            const Icon(
-              Icons.format_quote_rounded,
-              color: AppColors.accentAmber,
-              size: 32,
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.accentPink.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.format_quote_rounded,
+                color: AppColors.accentPink,
+              ),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.m),
             Text(
-              decision!.selectedQuoteText ?? 'Odaklan ve Harekete Geç.',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              decision!.selectedQuoteText ?? 'Odaklan ve harekete gec.',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontStyle: FontStyle.italic,
                     height: 1.5,
                   ),
@@ -48,16 +54,15 @@ class WisdomCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 24,
+                  width: 28,
                   height: 2,
-                  color: AppColors.accentBlue,
+                  color: AppColors.accentCyan,
                 ),
                 const SizedBox(width: AppSpacing.s),
                 Text(
                   decision!.historicalFigureName ?? 'Sistem',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppColors.textSecondary,
                       ),
                 ),
               ],
@@ -66,26 +71,23 @@ class WisdomCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.m),
               Wrap(
                 spacing: AppSpacing.xs,
-                children: decision!.selectedCategories.take(2).map((cat) {
+                runSpacing: AppSpacing.xs,
+                children: decision!.selectedCategories.take(3).map((category) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: AppColors.borderLight),
+                      color: AppColors.panelElevated.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: AppColors.borderSubtle),
                     ),
                     child: Text(
-                      cat.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textMediumEmphasisLight,
-                      ),
+                      category.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelMedium,
                     ),
                   );
                 }).toList(),
-              )
-            ]
+              ),
+            ],
           ],
         ),
       ),
@@ -100,34 +102,39 @@ class WisdomCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
+            _SkeletonLine(width: 40, height: 40, radius: 14),
             const SizedBox(height: AppSpacing.m),
-            Container(
-              width: double.infinity,
-              height: 16,
-              color: Colors.grey.withValues(alpha: 0.2),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              width: 200,
-              height: 16,
-              color: Colors.grey.withValues(alpha: 0.2),
-            ),
+            const _SkeletonLine(width: double.infinity, height: 18),
+            const SizedBox(height: AppSpacing.s),
+            const _SkeletonLine(width: 220, height: 18),
             const SizedBox(height: AppSpacing.m),
-            Container(
-              width: 100,
-              height: 12,
-              color: Colors.grey.withValues(alpha: 0.2),
-            ),
+            const _SkeletonLine(width: 120, height: 12),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SkeletonLine extends StatelessWidget {
+  const _SkeletonLine({
+    required this.width,
+    required this.height,
+    this.radius = 8,
+  });
+
+  final double width;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.shimmerBase,
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }

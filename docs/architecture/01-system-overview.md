@@ -2,50 +2,48 @@
 
 ## Product Framing
 
-Plan and Act bir todo uygulamasi degil. Cekirdek amaci:
-
-- gunluk plani hizli olusturmak
-- uygulama icinde execution takibi yapmak
-- deterministic ve explainable motivasyon secimi sunmak
-- gunluk odak temasi ile "Video of the Day" gostermek
-
-Bu nedenle sistem uc bagimsiz ama baglantili eksen uzerine kurulur:
+Plan and Act is an execution-focused planning app. The current product scope is built around two core systems:
 
 1. `planning core`
 2. `wisdom engine`
-3. `motivation media`
+
+Supporting systems:
+
+- `notifications`
+- `settings`
+- `analytics`
+
+Video or media feed behavior is intentionally out of scope.
 
 ## Architectural Position
 
-Bu proje icin dogru zemin:
+Correct foundations for this product:
 
-- local-first hiz
+- local-first speed
 - deterministic behavior
 - explainable scoring
 - clean architecture
-- sync-ready data model
+- sync-ready relational data
+- premium dark UI that does not distract from execution
 
-Yanlis zemin:
+Wrong foundations:
 
 - widget-driven business logic
-- key-value storage ile ana domain tasimak
-- tek servis dosyasinda hem secim hem log hem scoring yapmak
-- "AI magic" gibi gorunen ama aciklanamayan quote secimi
+- primary storage in key-value preferences
+- opaque quote selection
+- media-first dashboard behavior
 
 ## Bounded Contexts
 
-Sistemi su bounded context'lere bolmek gerekir:
-
 - `planning`
 - `wisdom_engine`
-- `video_of_the_day`
 - `notifications`
-- `user_preferences`
-- `analytics` bir domain degil, cross-cutting telemetry katmanidir
+- `settings`
+- `analytics`
 
 ## Layering Rule
 
-Her feature ayni katman mantigina uyar:
+Each feature follows the same layers:
 
 - `presentation`
 - `application`
@@ -53,46 +51,18 @@ Her feature ayni katman mantigina uyar:
 - `data`
 - `core`
 
-Kurallar:
+Rules:
 
-- presentation dogrudan database veya API istemcisine konusmaz
-- application use-case ve orchestration katmanidir
-- domain entity, value object, repository contract ve policy tasir
-- data DTO, mapper, local/remote repository implementasyonu tasir
-- core zaman, hata, logging, result, constants gibi ortak altyapiyi tasir
+- presentation does not talk directly to database or API clients
+- application orchestrates use cases and lifecycle logic
+- domain carries entities, value objects, policies, and repository contracts
+- data implements repositories, mappers, local persistence, and remote adapters
+- core carries time, errors, logging, results, constants, and theme primitives
 
 ## Non-Negotiable Decisions
 
-- `SharedPreferences`, plan ana depolama katmani olarak kaldirilacak
-- `Drift`, local canonical storage olacak
-- `Supabase/Postgres`, remote sync ve server-owned data kaynagi olacak
-- Wisdom Engine helper servis degil, bagimsiz subsystem olacak
-- Notification scheduling UI icinden degil application use-case icinden yonetilecek
-
-## Current Repo vs Target
-
-Su an repoda:
-
-- Riverpod var
-- temel feature ayrimi baslamis durumda
-- plan akisi calisiyor
-- wisdom secimi tek servis icinde prototip olarak mevcut
-- local storage `SharedPreferences`
-
-Hedefte:
-
-- iliskisel local schema
-- repository contract seti
-- explainable decision logging
-- sync-ready plan lifecycle
-- metadata-only video altyapisi
-- notification abstraction
-
-## Phase 2 Entry Gate
-
-Kod yazmaya gecmeden once su kararlar sabitlenmis sayilacak:
-
-- hedef dosya yapisi kabul edildi
-- local schema omurgasi kabul edildi
-- Wisdom Engine pipeline kabul edildi
-- sync politikasinin temel kurallari kabul edildi
+- `Drift` is the local canonical store
+- `SharedPreferences` is not used for primary domain persistence
+- the Wisdom Engine remains deterministic and explainable
+- notification scheduling is driven by application use cases
+- the app runs in dark-only `Dracula Neon`

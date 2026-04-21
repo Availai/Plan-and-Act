@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:planandact/app/theme/app_colors.dart';
 import 'package:planandact/app/theme/app_spacing.dart';
 
@@ -17,33 +16,35 @@ class EmptyStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Safe fallback Lottie URL for minimalist loading/empty
-            SizedBox(
-              height: 150,
-              child: Lottie.network(
-                'https://assets9.lottiefiles.com/packages/lf20_tlla1zxu.json', // Calm minimalist animation
-                errorBuilder: (context, error, stackTrace) => Icon(
-                  icon ?? Icons.done_all_rounded,
-                  size: 64,
-                  color: (isDark ? AppColors.textMediumEmphasisDark : AppColors.textMediumEmphasisLight).withValues(alpha: 0.3),
+            Container(
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.accentPurple.withValues(alpha: 0.24),
+                    AppColors.accentPurple.withValues(alpha: 0),
+                  ],
                 ),
+              ),
+              child: Icon(
+                icon ?? Icons.done_all_rounded,
+                size: 42,
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: AppSpacing.l),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: AppSpacing.s),
             Text(
