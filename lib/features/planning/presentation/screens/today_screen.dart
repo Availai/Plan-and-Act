@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:planandact/app/theme/app_colors.dart';
 import 'package:planandact/app/theme/app_spacing.dart';
 import 'package:planandact/features/planning/application/providers/use_case_providers.dart';
+import 'package:planandact/features/planning/domain/entities/plan_entity.dart';
+import 'package:planandact/features/planning/domain/value_objects/plan_lane.dart';
 import 'package:planandact/features/planning/presentation/providers/today_dashboard_providers.dart';
 import 'package:planandact/features/planning/presentation/widgets/add_plan_sheet.dart';
 import 'package:planandact/features/planning/presentation/widgets/plan_list_tile.dart';
@@ -245,15 +247,43 @@ class TodayScreen extends ConsumerWidget {
                     );
                   }
 
-                  // Render list 
-                  return SliverAnimatedList(
-                    initialItemCount: plans.length,
-                    itemBuilder: (context, index, animation) {
-                      if (index >= plans.length) return const SizedBox.shrink();
-                      final plan = plans[index];
-                      return SizeTransition(
-                        sizeFactor: animation,
-                        child: PlanListTile(
+                  final grouped = <PlanLane, List<PlanEntity>>{
+                    for (final lane in PlanLane.values) lane: [],
+                  };
+                  for (final plan in plans) {
+                    grouped[PlanLane.fromCategoryId(plan.categoryId)]!.add(plan);
+                  }
+
+                  final children = <Widget>[];
+                  for (final lane in PlanLane.values) {
+                    final lanePlans = grouped[lane]!;
+                    children.add(
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.m, bottom: AppSpacing.s),
+                        child: Text(
+                          lane.labelTr,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: AppColors.laneColor(lane.id, isDark: isDark),
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ),
+                    );
+                    if (lanePlans.isEmpty) {
+                      children.add(
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.s),
+                          child: Text(
+                            'Bu bölümde görev yok.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      );
+                      continue;
+                    }
+                    for (final plan in lanePlans) {
+                      children.add(
+                        PlanListTile(
                           plan: plan,
                           onToggleComplete: (val) {
                             if (val) {
@@ -263,9 +293,19 @@ class TodayScreen extends ConsumerWidget {
                           onDelete: () {
                             ref.read(deletePlanUseCaseProvider).call(plan.id);
                           },
+                          onEdit: () {
+                            AddPlanSheet.show(
+                              context,
+                              selectedDate: selectedDate,
+                              initialPlan: plan,
+                            );
+                          },
                         ),
                       );
-                    },
+                    }
+                  }
+                  return SliverList(
+                    delegate: SliverChildListDelegate(children),
                   );
                 },
               ),

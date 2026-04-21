@@ -146,3 +146,17 @@ Planning modulu icin zorunlu ekranlar:
 - `History / Reflection`
 
 Bu modulde presentation katmani dogrudan storage'a baglanmaz.
+
+## Execution Lanes (Takip Segmentleri)
+
+Today Dashboard listesi 4 lane altinda gruplandirilarak gosterilir:
+
+- `critical` -> Kritik
+- `must_do` -> Yapılmalı
+- `challenging` -> Zorlayıcı
+- `chore_useful` -> Angarya ama Yararlı
+
+Karar:
+
+- lane degeri `plans.category_id` alaninda tutulur (yeni kolon gerektirmez).
+- dark mode tarafinda lane bazli neon vurgu renkleri kullanilir.

@@ -96,10 +96,10 @@ class AppTheme {
     final base = ThemeData(
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.surfaceLight,
-        secondary: AppColors.accentBlue,
+        primary: AppColors.neonCyan,
+        secondary: AppColors.neonPink,
         surface: AppColors.surfaceDark,
-        error: AppColors.accentRed,
+        error: AppColors.neonOrange,
       ),
       scaffoldBackgroundColor: AppColors.backgroundDark,
       useMaterial3: true,
@@ -167,8 +167,8 @@ class AppTheme {
         thickness: 1,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.surfaceLight,
-        foregroundColor: AppColors.primary,
+        backgroundColor: AppColors.neonCyan,
+        foregroundColor: AppColors.backgroundDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusM),
         ),

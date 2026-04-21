@@ -4,6 +4,7 @@ import 'package:planandact/features/planning/application/providers/plan_reposito
 import 'package:planandact/features/planning/application/use_cases/create_plan_use_case.dart';
 import 'package:planandact/features/planning/application/use_cases/delete_plan_use_case.dart';
 import 'package:planandact/features/planning/application/use_cases/mark_plan_completed_use_case.dart';
+import 'package:planandact/features/planning/application/use_cases/update_plan_use_case.dart';
 import 'package:planandact/features/planning/data/repositories/drift_plan_history_repository.dart';
 import 'package:planandact/features/planning/domain/repositories/plan_history_repository.dart';
 import 'package:planandact/features/planning/application/providers/database_provider.dart';
@@ -31,4 +32,10 @@ final markPlanCompletedUseCaseProvider = Provider<MarkPlanCompletedUseCase>((ref
   final historyRepo = ref.watch(planHistoryRepositoryProvider);
   final notificationService = ref.watch(notificationServiceProvider);
   return MarkPlanCompletedUseCase(planRepo, historyRepo, notificationService);
+});
+
+final updatePlanUseCaseProvider = Provider<UpdatePlanUseCase>((ref) {
+  final repo = ref.watch(planRepositoryProvider);
+  final notificationService = ref.watch(notificationServiceProvider);
+  return UpdatePlanUseCase(repo, notificationService);
 });

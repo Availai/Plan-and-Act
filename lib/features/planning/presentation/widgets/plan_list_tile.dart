@@ -13,11 +13,13 @@ class PlanListTile extends StatefulWidget {
     required this.plan,
     required this.onToggleComplete,
     required this.onDelete,
+    required this.onEdit,
   });
 
   final PlanEntity plan;
   final ValueChanged<bool> onToggleComplete;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   @override
   State<PlanListTile> createState() => _PlanListTileState();
@@ -27,14 +29,16 @@ class _PlanListTileState extends State<PlanListTile> {
   bool _expanded = false;
 
   Color _getPriorityColor() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final laneColor = AppColors.laneColor(widget.plan.categoryId, isDark: isDark);
     switch (widget.plan.priority) {
       case PlanPriority.high:
       case PlanPriority.critical:
-        return AppColors.priorityHigh;
+        return laneColor;
       case PlanPriority.medium:
-        return AppColors.priorityMedium;
+        return laneColor;
       case PlanPriority.low:
-        return AppColors.priorityLow;
+        return laneColor;
     }
   }
 
@@ -80,6 +84,16 @@ class _PlanListTileState extends State<PlanListTile> {
             endActionPane: ActionPane(
               motion: const BehindMotion(),
               children: [
+                SlidableAction(
+                  onPressed: (_) {
+                    HapticFeedback.lightImpact();
+                    widget.onEdit();
+                  },
+                  backgroundColor: AppColors.accentBlue,
+                  foregroundColor: Colors.white,
+                  icon: Icons.edit_rounded,
+                  label: 'Düzenle',
+                ),
                 SlidableAction(
                   onPressed: (_) {
                     HapticFeedback.heavyImpact();
