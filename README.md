@@ -1,94 +1,190 @@
 # Plan and Act
 
-Plan and Act, kullanıcıların gün içindeki hedeflerini hızlıca planlayıp uygulama içinde takip etmesini sağlayan bir Flutter mobil uygulamasıdır. Uygulama, plan içeriğine göre kısa motivasyon/alıntı üretimiyle (Wisdom Engine) kullanıcıyı harekete geçirmeyi amaçlar.
+Plan and Act, kullanıcının gün içindeki hedeflerini hızlıca planlayıp uygulama içinde takip etmesini sağlayan bir Flutter mobil uygulamasıdır. Mevcut sürüm, "bugün odaklı" bir akışa sahiptir: plan ekleme, listeleme, tamamlama, erteleme ve bu bağlama göre `rule-based contextual matching` ile `motivational message selection`.
 
-## Ürün Amacı
-- Günlük plan oluşturmayı birkaç adımda tamamlanabilir hale getirmek.
-- Planları zaman bazlı olarak tek ekranda görünür kılmak.
-- Plan içeriğine göre bağlama uygun motivasyon mesajı sunarak uygulama içi etkileşimi artırmak.
+Bu noktada Wisdom Engine bir "quote generation" sistemi değildir. Uygulama, plan kategorisi ve erteleme geçmişi gibi sinyallere göre sabit bir içerik havuzundan uygun motivasyon mesajı ve alıntı seçer.
 
-## Özellikler (Mevcut)
-1. **Plan oluşturma**: Başlık, açıklama ve saat bilgisiyle yeni plan ekleme.
-2. **Listeleme ve sıralama**: Planların ana ekranda zamana göre sıralı gösterimi.
-3. **Yerel kalıcılık**: Planların cihazda `SharedPreferences` ile saklanması.
-4. **Wisdom Engine (kural tabanlı)**: Plan metnine göre anahtar kelime eşleşmesiyle motivasyon cümlesi üretimi.
-5. **Modern arayüz**: Material 3 teması, alt sayfa (bottom sheet) ile plan ekleme akışı.
+## Ürün Özeti
+
+- Günlük planları tek ekranda görülebilir hale getirir.
+- Kullanıcıya saat bazlı plan ekleme ve hızlı takip akışı sunar.
+- Tamamlanan ve ertelenen planları ayrı görünümlerde toplar.
+- Erteleme tekrarlarını izleyerek "stuck" sinyali üretir.
+- Generative AI yerine kural tabanlı eşleştirme ile motivasyon mesajı seçer.
+
+## Mevcut Deneyim
+
+Uygulamanın bugünkü sürümü dört ana ekran etrafında şekilleniyor:
+
+1. `Today Dashboard`: Bugünkü planlar, ilerleme oranı ve seçilen motivasyon mesajı.
+2. `Reflection`: Tamamlanan ve ertelenen planların özet görünümü.
+3. `Momentum`: Tamamlanan görevlere göre basit streak takibi.
+4. `Stuck Detection`: Birden fazla kez ertelenen planları öne çıkarır.
+
+## Ekran Görüntüleri ve Demo
+
+Bu README artık medya odaklı bir yapıya hazır, ancak repo içinde gerçek ekran görüntüleri ve GIF/demo dosyaları henüz yok. Sahte ürün görüntüleri eklemedim; bunun yerine `docs/media/` altında net bir teslim listesi hazırladım.
+
+Medya klasörü: [docs/media/README.md](docs/media/README.md)
+
+Önerilen dosyalar:
+
+| İçerik | Beklenen dosya |
+| --- | --- |
+| Today Dashboard ekran görüntüsü | `docs/media/today-dashboard.png` |
+| Add Plan bottom sheet ekran görüntüsü | `docs/media/add-plan-sheet.png` |
+| Reflection ekran görüntüsü | `docs/media/reflection-screen.png` |
+| Momentum ekran görüntüsü | `docs/media/momentum-screen.png` |
+| Stuck Detection ekran görüntüsü | `docs/media/stuck-screen.png` |
+| Kısa demo GIF | `docs/media/planandact-demo.gif` |
+
+README'ye gerçek görseller eklendikten sonra bu bölüm doğrudan görsel galerisine dönüştürülebilir.
+
+## Kısa Kullanım Senaryosu
+
+1. Kullanıcı sabah uygulamayı açar ve `Yeni Plan` butonuna dokunur.
+2. Başlık, açıklama, kategori ve saat girerek bugün için bir plan oluşturur.
+3. Plan, `Today Dashboard` içinde saat bazlı listede görünür.
+4. Wisdom Engine, mevcut plan durumuna göre uygun bir motivasyon mesajı seçer.
+5. Kullanıcı planı tamamlarsa `Reflection` ve `Momentum` görünümleri güncellenir.
+6. Kullanıcı planı ertelerse görev bir sonraki güne kayar; tekrar eden ertelemelerde `Stuck Detection` bunu belirginleştirir.
+
+## Akış Diyagramı
+
+```mermaid
+flowchart TD
+    A[Kullanıcı uygulamayı açar] --> B[HomeScreen]
+    B --> C[Today Dashboard]
+    C --> D[AddPlanSheet]
+    D --> E[addPlanFormProvider]
+    E --> F[PlansNotifier.addPlan]
+    F --> G[PlanStorageService.savePlans]
+    G --> H[plansProvider state güncellenir]
+    H --> I[Today / Reflection / Momentum / Stuck ekranları]
+    I --> J[WisdomService]
+    J --> K[Rule-based contextual matching]
+    K --> L[Motivational message selection]
+    I --> M{Kullanıcı aksiyonu}
+    M -->|Tamamla| N[markPlanCompleted]
+    M -->|Ertele| O[postponePlan]
+    N --> G
+    O --> G
+```
+
+## Özellikler
+
+1. `Plan ekleme`: Başlık, açıklama, kategori ve saat ile yeni plan oluşturma.
+2. `Plan listeleme`: Planları zaman sırasına göre ana akışta gösterme.
+3. `Durum güncelleme`: Planları tamamlama veya bir sonraki güne erteleme.
+4. `Reflection view`: Tamamlanan ve ertelenen planları ayrı listeler halinde gösterme.
+5. `Momentum view`: Tamamlanan görevlerden basit ilerleme ritmi çıkarma.
+6. `Stuck detection`: Tekrar tekrar ertelenen görevleri öne çıkarma.
+7. `Yerel kalıcılık`: Planları `SharedPreferences` ile cihazda saklama.
+8. `Wisdom Engine`: Kural tabanlı eşleştirme ile alıntı ve motivasyon mesajı seçme.
 
 ## Mimari
-Uygulama şu anda basit ve feature odaklı bir yapıda ilerlemektedir:
 
-- `lib/main.dart`
-  - Uygulama başlatma, tema ve `HomeScreen` yönlendirmesi.
-- `lib/features/plan_management/`
-  - `home_screen.dart`: Planların listelendiği ana ekran.
-  - `add_plan_sheet.dart`: Plan oluşturma formu.
-  - `plan_model.dart`: Plan veri modeli.
-- `lib/features/wisdom_engine/`
-  - `wisdom_service.dart`: Kural tabanlı motivasyon üretimi.
-- `lib/core/`
-  - `storage_service.dart`: Planların yerel depolamaya yazılması/okunması.
+Proje artık tek dosyalı bir yapı yerine feature bazlı ve katmanları ayrılmış bir organizasyona doğru ilerliyor:
+
+```text
+lib/
+  app/
+    app.dart
+  features/
+    plan_management/
+      application/
+        providers/
+      data/
+        datasources/
+      domain/
+        entities/
+      presentation/
+        screens/
+        widgets/
+    wisdom_engine/
+      wisdom_service.dart
+  main.dart
+```
+
+Katmanların mevcut sorumlulukları:
+
+- `presentation`: Ekranlar, bottom sheet ve kullanıcı etkileşimi.
+- `application`: Riverpod provider'ları ve UI ile veri akışı arasındaki durum yönetimi.
+- `data`: `SharedPreferences` tabanlı yerel saklama.
+- `domain`: `Plan` varlığı, kategori ve durum modelleri.
+- `wisdom_engine`: Plan bağlamına göre kural tabanlı motivational message selection.
 
 ## Technology Stack
 
-### Mevcut Durum (Current)
-- **Frontend**: Flutter (Dart)
-- **State management**: StatefulWidget + `setState`
-- **Local storage**: `shared_preferences`
-- **Notification dependency**: `flutter_local_notifications` ve `timezone` paketleri eklendi, ancak uçtan uca bildirim akışı henüz aktif değil
-- **Hedef platformlar**: Android, iOS, Web, Desktop (Flutter proje iskeleti mevcut)
+### Mevcut Durum
 
-### Hedef Mimari (Target)
-- **Katmanlı yapı**: Presentation / Application / Data ayrımının netleştirilmesi
-- **State management dönüşümü**: `setState` yaklaşımından daha ölçeklenebilir bir yapıya (örn. Riverpod/Bloc) geçiş
-- **Bildirim altyapısı**: Zamanlanmış yerel bildirimlerin plan yaşam döngüsüne bağlı tam entegrasyonu
-- **Senkronizasyon**: İhtiyaca göre bulut backend (örn. Firebase) ile cihazlar arası veri eşitleme
-- **Gelişmiş Wisdom Engine**: Kural tabanlı eşleştirmeden daha esnek/öğrenebilir öneri sistemine geçiş
+- `Flutter` + `Dart`
+- `flutter_riverpod`
+- `shared_preferences`
+- `flutter_local_notifications` ve `timezone`
+- Material 3 tabanlı koyu tema
 
-## Kurulum Adımları
-1. Flutter SDK kurulu olduğundan emin olun.
+### Bugün Gerçekte Olanlar
+
+- State management artık yalnızca `setState` değil; veri akışı Riverpod provider'ları ile yürütülüyor.
+- Alt gezinme ile çoklu ekran akışı mevcut.
+- Bildirim bağımlılıkları projeye eklenmiş durumda, ancak plan oluşturma/güncelleme/silme yaşam döngüsüne tam bağlı bir notification akışı yok.
+- Wisdom Engine generative değil; sabit kural seti üzerinden seçim yapıyor.
+
+### Hedef Mimari
+
+- Notification scheduling ve cancellation akışını plan yaşam döngüsüne bağlamak.
+- Repository soyutlamalarıyla veri erişim katmanını daha netleştirmek.
+- İhtiyaca göre cloud sync için backend adaptörü eklemek.
+- Wisdom Engine'i daha esnek bir recommendation katmanına taşımak.
+
+## Kurulum
+
+1. Flutter SDK'nin kurulu olduğundan emin olun.
 2. Depoyu klonlayın:
+
    ```bash
    git clone <repo-url>
    cd Plan-and-Act
    ```
-3. Paketleri yükleyin:
+
+3. Bağımlılıkları yükleyin:
+
    ```bash
    flutter pub get
    ```
+
 4. Uygulamayı çalıştırın:
+
    ```bash
    flutter run
    ```
-5. (Opsiyonel) Kod kalitesi ve test:
+
+5. Analiz ve test:
+
    ```bash
    flutter analyze
    flutter test
    ```
 
+## Known Limitations
+
+- Plan oluşturma akışında tarih seçimi yok; mevcut akışta planlar bugün için oluşturuluyor.
+- Plan düzenleme ve silme henüz uygulanmadı.
+- `flutter_local_notifications` ve `timezone` bağımlılıkları mevcut, ancak uçtan uca bildirim akışı tamamlanmadı.
+- Wisdom Engine gerçek zamanlı öğrenme, semantic analysis veya LLM tabanlı üretim yapmıyor.
+- Veriler yalnızca cihazda tutuluyor; cihazlar arası senkronizasyon yok.
+- README medya yapısı hazırlandı, fakat gerçek ekran görüntüleri ve demo GIF henüz eklenmedi.
+
 ## Roadmap
+
 - [x] Temel plan oluşturma ve listeleme
-- [x] Yerel depolama ile planların kalıcılığı
-- [x] Kural tabanlı Wisdom Engine
+- [x] Yerel depolama ile kalıcılık
+- [x] Riverpod tabanlı temel state katmanı
+- [x] Reflection, Momentum ve Stuck ekranları
+- [x] Rule-based motivational message selection
 - [ ] Plan düzenleme / silme akışları
-- [ ] Zamanlanmış yerel bildirimlerin uçtan uca aktif edilmesi
-- [ ] State management katmanının ölçeklenebilir mimariye taşınması
-- [ ] Birden fazla gün/tarih için planlama ve filtreleme
+- [ ] Uçtan uca zamanlanmış bildirim altyapısı
+- [ ] Tarih bazlı planlama ve filtreleme
 - [ ] Bulut senkronizasyonu ve kullanıcı hesabı altyapısı
-
-## Known limitations
-- Bildirim paketleri projede bulunmasına rağmen, plan oluşturma anında bildirim planlama/iptal etme akışı henüz uygulanmamıştır.
-- Veri modeli ve UI katmanı arasında doğrudan bağlar mevcut; ölçek büyüdükçe bakım maliyeti artabilir.
-- State yönetimi `setState` tabanlı olduğu için modül sayısı arttıkça test edilebilirlik ve öngörülebilirlik düşebilir.
-- Planlar yalnızca yerel depolamada tutulduğu için cihazlar arası senkronizasyon yoktur.
-
-## Next milestones
-1. **Bildirim altyapısı (öncelikli)**
-   - `flutter_local_notifications` + `timezone` ile plan bazlı zamanlanmış bildirimleri devreye almak.
-   - Plan güncelleme/silme durumunda bildirim yeniden planlama ve iptal stratejisini eklemek.
-2. **State management dönüşümü (öncelikli)**
-   - Feature bazlı state katmanını Riverpod/Bloc gibi bir yaklaşıma taşımak.
-   - UI, domain ve data sorumluluklarını ayrıştırarak test kapsamını genişletmek.
-3. **Plan yaşam döngüsü geliştirmeleri**
-   - Düzenleme, silme, tamamlandı/ertelendi durumlarının eklenmesi.
-4. **Senkronizasyon hazırlığı**
-   - Backend entegrasyonu için repository arayüzlerinin tanımlanması ve veri erişim soyutlamasının tamamlanması.
+- [ ] README için gerçek ekran görüntüleri ve demo GIF
