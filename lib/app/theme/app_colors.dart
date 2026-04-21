@@ -13,6 +13,10 @@ class AppColors {
   static const Color accentGreen = Color(0xFF34C759); // Emerald Green
   static const Color accentAmber = Color(0xFFFF9F0A);
   static const Color accentRed = Color(0xFFFF453A); // Destructive action
+  static const Color neonCyan = Color(0xFF22D3EE);
+  static const Color neonPink = Color(0xFFFF4DCE);
+  static const Color neonLime = Color(0xFFA3E635);
+  static const Color neonOrange = Color(0xFFFF7A18);
 
   // Backgrounds - Light Mode (Modern Paper)
   static const Color backgroundLight = Color(0xFFFFFFFF); // Pure White
@@ -40,4 +44,19 @@ class AppColors {
   // Borders & Dividers
   static const Color borderLight = Color(0xFFE5E5EA);
   static const Color borderDark = Color(0xFF38383A);
+
+  static Color laneColor(String? laneId, {required bool isDark}) {
+    switch (laneId) {
+      case 'critical':
+        return isDark ? neonPink : accentRed;
+      case 'must_do':
+        return isDark ? neonCyan : primary;
+      case 'challenging':
+        return isDark ? neonOrange : accentAmber;
+      case 'chore_useful':
+        return isDark ? neonLime : accentGreen;
+      default:
+        return isDark ? neonCyan : primary;
+    }
+  }
 }

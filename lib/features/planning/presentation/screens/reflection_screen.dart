@@ -42,10 +42,14 @@ class ReflectionScreen extends ConsumerWidget {
                   );
                 }
                 return Column(
-                  children: plans.map((p) => PlanListTile(plan: p, onToggleComplete: (_) {}, onDelete: () {
-                    // Reflection screen specific delete logic or empty for now
-                    ref.read(deletePlanUseCaseProvider).call(p.id);
-                  })).toList(),
+                  children: plans.map((p) => PlanListTile(
+                    plan: p,
+                    onToggleComplete: (_) {},
+                    onDelete: () {
+                      ref.read(deletePlanUseCaseProvider).call(p.id);
+                    },
+                    onEdit: () {},
+                  )).toList(),
                 );
               },
             ),
@@ -70,9 +74,14 @@ class ReflectionScreen extends ConsumerWidget {
                   );
                 }
                 return Column(
-                  children: plans.map((p) => PlanListTile(plan: p, onToggleComplete: (_) {}, onDelete: () {
-                    ref.read(deletePlanUseCaseProvider).call(p.id);
-                  })).toList(),
+                  children: plans.map((p) => PlanListTile(
+                    plan: p,
+                    onToggleComplete: (_) {},
+                    onDelete: () {
+                      ref.read(deletePlanUseCaseProvider).call(p.id);
+                    },
+                    onEdit: () {},
+                  )).toList(),
                 );
               },
             ),
