@@ -3,23 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:planandact/app/theme/app_colors.dart';
 import 'package:planandact/app/theme/app_spacing.dart';
+import 'package:planandact/core/result/result.dart';
 import 'package:planandact/features/planning/application/providers/use_case_providers.dart';
 import 'package:planandact/features/planning/domain/entities/plan_entity.dart';
 import 'package:planandact/features/planning/domain/value_objects/plan_priority.dart';
 import 'package:uuid/uuid.dart';
 
 class AddPlanSheet extends ConsumerStatefulWidget {
-  const AddPlanSheet({super.key});
+  const AddPlanSheet({
+    super.key,
+    required this.selectedDate,
+  });
 
-  static void show(BuildContext context) {
+  final DateTime selectedDate;
 
+  static void show(
+    BuildContext context, {
+    required DateTime selectedDate,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: const AddPlanSheet(),
+        child: AddPlanSheet(selectedDate: selectedDate),
       ),
     );
   }
@@ -34,7 +42,8 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
   
   PlanPriority _priority = PlanPriority.medium;
   TimeOfDay? _selectedTime;
-  bool _reminderEnabled = true;
+  bool _reminderEnabled = false;
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -44,22 +53,39 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
   }
 
   void _savePlan() async {
+    if (_isSaving) return;
     final title = _titleController.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen görev başlığı girin.')),
+      );
+      return;
+    }
 
     final now = DateTime.now();
-    
-    // Default to end of day if not set, or the specific time
-    var scheduledAtUtc = now.toUtc();
-    var scheduledTimeLocal = '';
-    
-    if (_selectedTime != null) {
-      final scheduledDate = DateTime(
-        now.year, now.month, now.day,
-        _selectedTime!.hour, _selectedTime!.minute,
+    final baseDate = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+      widget.selectedDate.day,
+    );
+    final effectiveTime = _selectedTime ?? const TimeOfDay(hour: 9, minute: 0);
+    final scheduledDateTime = DateTime(
+      baseDate.year,
+      baseDate.month,
+      baseDate.day,
+      effectiveTime.hour,
+      effectiveTime.minute,
+    );
+
+    final scheduledAtUtc = scheduledDateTime.toUtc();
+    final scheduledTimeLocal =
+        '${effectiveTime.hour.toString().padLeft(2, '0')}:${effectiveTime.minute.toString().padLeft(2, '0')}';
+
+    if (_reminderEnabled && _selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Hatırlatıcı için saat seçmelisiniz.')),
       );
-      scheduledAtUtc = scheduledDate.toUtc();
-      scheduledTimeLocal = '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
+      return;
     }
 
     final newPlan = PlanEntity(
@@ -67,7 +93,7 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
       userId: 'local_user',
       title: title,
       description: _descController.text.trim(),
-      scheduledDate: now,
+      scheduledDate: baseDate,
       scheduledTimeLocal: scheduledTimeLocal,
       scheduledAtUtc: scheduledAtUtc,
       priority: _priority,
@@ -79,10 +105,18 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
     );
 
     final useCase = ref.read(createPlanUseCaseProvider);
-    await useCase.call(newPlan);
+    setState(() => _isSaving = true);
+    final result = await useCase.call(newPlan);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
 
-    if (mounted) {
-      Navigator.of(context).pop();
+    switch (result) {
+      case Success<PlanEntity>():
+        Navigator.of(context).pop();
+      case Err<PlanEntity>(:final failure):
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(failure.message)),
+        );
     }
   }
 
@@ -178,8 +212,14 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
             ),
             const SizedBox(height: AppSpacing.l),
             FilledButton(
-              onPressed: _savePlan,
-              child: const Text('Oluştur'),
+              onPressed: _isSaving ? null : _savePlan,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Oluştur'),
             ),
           ],
         ),

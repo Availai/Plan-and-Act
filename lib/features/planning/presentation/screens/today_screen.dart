@@ -60,7 +60,10 @@ class TodayScreen extends ConsumerWidget {
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => AddPlanSheet.show(context),
+        onPressed: () => AddPlanSheet.show(
+          context,
+          selectedDate: selectedDate,
+        ),
         backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black,
         icon: const Icon(Icons.add),
