@@ -210,10 +210,6 @@ class TodayScreen extends ConsumerWidget {
                         );
                     }
                   },
-                  onCreatePlan: () => AddPlanSheet.show(
-                    context,
-                    selectedDate: selectedDate,
-                  ),
                 ),
               ),
               SliverToBoxAdapter(
