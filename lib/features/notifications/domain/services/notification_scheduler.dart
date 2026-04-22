@@ -23,6 +23,14 @@ abstract class NotificationScheduler {
     Map<String, String>? payload,
   });
 
+  /// Fires a notification immediately.
+  Future<void> showNow({
+    required int notificationId,
+    required String title,
+    required String body,
+    Map<String, String>? payload,
+  });
+
   /// Cancels a specific reminder.
   Future<void> cancelPlanReminder(int notificationId);
 

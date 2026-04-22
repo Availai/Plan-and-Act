@@ -16,13 +16,20 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
     'plan_reminders',
     'Plan Hatırlatıcıları',
     channelDescription: 'Planlanmış görev hatırlatıcıları',
-    importance: Importance.high,
+    importance: Importance.max,
     priority: Priority.high,
+    category: AndroidNotificationCategory.reminder,
+    playSound: true,
+    enableVibration: true,
   );
 
   static const _notificationDetails = NotificationDetails(
     android: _androidChannel,
-    iOS: DarwinNotificationDetails(),
+    iOS: DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    ),
   );
 
   /// Must be called once during app initialization.
@@ -41,6 +48,16 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
         iOS: iosSettings,
       ),
     );
+
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await androidImpl?.requestNotificationsPermission();
+    await androidImpl?.requestExactAlarmsPermission();
+
+    final iosImpl = _plugin.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
+    await iosImpl?.requestPermissions(alert: true, badge: true, sound: true);
+
     AppLogger.info(_tag, 'Notification plugin initialized');
   }
 
@@ -92,6 +109,26 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
       timezone: timezone,
       payload: payload,
     );
+  }
+
+  @override
+  Future<void> showNow({
+    required int notificationId,
+    required String title,
+    required String body,
+    Map<String, String>? payload,
+  }) async {
+    try {
+      await _plugin.show(
+        id: notificationId,
+        title: title,
+        body: body,
+        notificationDetails: _notificationDetails,
+      );
+      AppLogger.debug(_tag, 'Shown immediate notification $notificationId');
+    } catch (e, st) {
+      AppLogger.error(_tag, 'Failed to show notification', e, st);
+    }
   }
 
   @override

@@ -5,6 +5,7 @@ import 'package:planandact/app/theme/app_spacing.dart';
 import 'package:planandact/features/planning/application/providers/use_case_providers.dart';
 import 'package:planandact/features/planning/domain/entities/plan_entity.dart';
 import 'package:planandact/features/planning/domain/value_objects/plan_status.dart';
+import 'package:planandact/features/planning/domain/value_objects/plan_task_type.dart';
 import 'package:planandact/features/planning/presentation/providers/plan_detail_providers.dart';
 import 'package:planandact/shared/presentation/widgets/app_backdrop.dart';
 

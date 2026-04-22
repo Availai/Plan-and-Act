@@ -13,9 +13,10 @@ class HomeShell extends StatelessWidget {
   final Widget child;
 
   static int _locationToIndex(String location) {
-    if (location.startsWith(RouteNames.reflection)) return 1;
-    if (location.startsWith(RouteNames.momentum)) return 2;
-    if (location.startsWith(RouteNames.stuck)) return 3;
+    if (location.startsWith(RouteNames.allPlans)) return 1;
+    if (location.startsWith(RouteNames.reflection)) return 2;
+    if (location.startsWith(RouteNames.momentum)) return 3;
+    if (location.startsWith(RouteNames.stuck)) return 4;
     return 0;
   }
 
@@ -23,6 +24,10 @@ class HomeShell extends StatelessWidget {
     NavigationDestination(
       icon: Icon(Icons.today_rounded),
       label: 'Bugun',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.list_alt_rounded),
+      label: 'Tumu',
     ),
     NavigationDestination(
       icon: Icon(Icons.self_improvement_rounded),
@@ -64,6 +69,7 @@ class HomeShell extends StatelessWidget {
           onDestinationSelected: (index) {
             final routes = [
               RouteNames.today,
+              RouteNames.allPlans,
               RouteNames.reflection,
               RouteNames.momentum,
               RouteNames.stuck,

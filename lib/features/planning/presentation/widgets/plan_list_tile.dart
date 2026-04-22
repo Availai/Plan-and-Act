@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:planandact/app/theme/app_colors.dart';
 import 'package:planandact/app/theme/app_spacing.dart';
 import 'package:planandact/features/planning/domain/entities/plan_entity.dart';
 import 'package:planandact/features/planning/domain/value_objects/plan_priority.dart';
 import 'package:planandact/features/planning/domain/value_objects/plan_status.dart';
+import 'package:planandact/features/planning/presentation/providers/plan_detail_providers.dart';
 
-class PlanListTile extends StatefulWidget {
+class PlanListTile extends ConsumerStatefulWidget {
   const PlanListTile({
     super.key,
     required this.plan,
@@ -22,10 +24,10 @@ class PlanListTile extends StatefulWidget {
   final VoidCallback onEdit;
 
   @override
-  State<PlanListTile> createState() => _PlanListTileState();
+  ConsumerState<PlanListTile> createState() => _PlanListTileState();
 }
 
-class _PlanListTileState extends State<PlanListTile> {
+class _PlanListTileState extends ConsumerState<PlanListTile> {
   bool _expanded = false;
 
   Color _getPriorityColor() {
@@ -212,6 +214,8 @@ class _PlanListTileState extends State<PlanListTile> {
                                         .withValues(alpha: baseOpacity),
                                   ),
                             ),
+                            const SizedBox(height: AppSpacing.s),
+                            _InlineQuoteCard(plan: widget.plan),
                           ],
                         ),
                       ),
@@ -227,6 +231,79 @@ class _PlanListTileState extends State<PlanListTile> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _InlineQuoteCard extends ConsumerWidget {
+  const _InlineQuoteCard({required this.plan});
+
+  final PlanEntity plan;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quoteAsync = ref.watch(planQuoteInsightProvider(plan));
+
+    return quoteAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (insight) {
+        if (insight == null) return const SizedBox.shrink();
+        return Container(
+          margin: const EdgeInsets.only(top: AppSpacing.s),
+          padding: const EdgeInsets.all(AppSpacing.m),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.panelElevated.withValues(alpha: 0.7),
+                AppColors.panelBackground.withValues(alpha: 0.55),
+              ],
+            ),
+            border: Border.all(
+              color: AppColors.accentPurple.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 14,
+                    color: AppColors.accentPurple,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    'Unlu Soz',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppColors.accentPurple,
+                          letterSpacing: 1.2,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                '"${insight.quoteText}"',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                '— ${insight.figureName}',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.accentCyan,
+                    ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

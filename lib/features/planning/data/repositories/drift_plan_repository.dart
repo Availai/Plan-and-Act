@@ -106,6 +106,20 @@ class DriftPlanRepository implements PlanRepository {
   }
 
   @override
+  Future<Result<List<PlanEntity>>> getAllPlans(String userId) async {
+    try {
+      final rows = await _dao.getAllPlans(userId);
+      final domain = _mapper.toDomainList(rows)
+          .where((plan) => !plan.isDeleted)
+          .toList();
+      return Success(domain);
+    } catch (e, st) {
+      AppLogger.error(_tag, 'Failed to get all plans', e, st);
+      return Err(StorageFailure('Tum planlar yuklenemedi', e.toString()));
+    }
+  }
+
+  @override
   Stream<List<PlanEntity>> watchPlansForDate(String userId, DateTime date) {
     return _dao
         .watchPlansForDate(userId, date)

@@ -27,6 +27,9 @@ abstract class PlanRepository {
   /// Returns all plans matching a specific status.
   Future<Result<List<PlanEntity>>> getPlansByStatus(PlanStatus status);
 
+  /// Returns every non-deleted plan belonging to a user.
+  Future<Result<List<PlanEntity>>> getAllPlans(String userId);
+
   /// Reactive stream of plans for a date.
   Stream<List<PlanEntity>> watchPlansForDate(String userId, DateTime date);
 

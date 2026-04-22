@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:planandact/app/router/route_names.dart';
+import 'package:planandact/features/planning/presentation/screens/all_plans_screen.dart';
 import 'package:planandact/features/planning/presentation/screens/home_shell.dart';
 import 'package:planandact/features/planning/presentation/screens/momentum_screen.dart';
 import 'package:planandact/features/planning/presentation/screens/plan_detail_route_screen.dart';
@@ -37,6 +38,12 @@ final appRouter = GoRouter(
           path: RouteNames.stuck,
           pageBuilder: (context, state) => const NoTransitionPage(
             child: StuckScreen(),
+          ),
+        ),
+        GoRoute(
+          path: RouteNames.allPlans,
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: AllPlansScreen(),
           ),
         ),
       ],

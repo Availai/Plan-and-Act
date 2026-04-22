@@ -6,6 +6,7 @@ class RouteNames {
   static const String reflection = '/reflection';
   static const String momentum = '/momentum';
   static const String stuck = '/stuck';
+  static const String allPlans = '/plans';
   static const String planDetail = '/plan/:planId';
   static const String settings = '/settings';
 
