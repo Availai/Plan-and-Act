@@ -9,6 +9,7 @@ import 'package:planandact/features/planning/application/providers/use_case_prov
 import 'package:planandact/features/planning/domain/entities/plan_entity.dart';
 import 'package:planandact/features/planning/domain/value_objects/plan_lane.dart';
 import 'package:planandact/features/planning/domain/value_objects/plan_priority.dart';
+import 'package:planandact/features/planning/domain/value_objects/plan_task_type.dart';
 import 'package:planandact/shared/presentation/widgets/app_backdrop.dart';
 import 'package:uuid/uuid.dart';
 
@@ -52,6 +53,7 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
   PlanPriority _priority = PlanPriority.medium;
   TimeOfDay? _selectedTime;
   PlanLane _lane = PlanLane.mustDo;
+  PlanTaskType _taskType = PlanTaskType.programming;
   bool _reminderEnabled = false;
   bool _isSaving = false;
 
@@ -60,11 +62,18 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
     super.initState();
     final initial = widget.initialPlan;
     if (initial == null) return;
+
     _titleController.text = initial.title;
     _descController.text = initial.description;
     _priority = initial.priority;
     _reminderEnabled = initial.reminderEnabled;
     _lane = PlanLane.fromCategoryId(initial.categoryId);
+
+    final snapshot = initial.motivationContextSnapshot ?? '';
+    if (snapshot.startsWith('task_type:')) {
+      _taskType = parsePlanTaskTypeKey(snapshot.replaceFirst('task_type:', ''));
+    }
+
     if (initial.scheduledTimeLocal.isNotEmpty) {
       final parts = initial.scheduledTimeLocal.split(':');
       if (parts.length == 2) {
@@ -133,6 +142,7 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
               reminderEnabled: _reminderEnabled,
               reminderTimeLocal: _reminderEnabled ? scheduledTimeLocal : null,
               reminderAtUtc: _reminderEnabled ? scheduledAtUtc : null,
+              motivationContextSnapshot: 'task_type:${_taskType.key}',
               createdAt: now,
               updatedAt: now,
             ))
@@ -147,6 +157,7 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
           reminderEnabled: _reminderEnabled,
           reminderTimeLocal: _reminderEnabled ? scheduledTimeLocal : null,
           reminderAtUtc: _reminderEnabled ? scheduledAtUtc : null,
+          motivationContextSnapshot: 'task_type:${_taskType.key}',
           updatedAt: now,
         );
 
@@ -155,6 +166,7 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
     final result = isEditing
         ? await ref.read(updatePlanUseCaseProvider).call(newPlan)
         : await ref.read(createPlanUseCaseProvider).call(newPlan);
+
     if (!mounted) return;
     setState(() => _isSaving = false);
 
@@ -170,156 +182,180 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusL),
-        ),
-        child: AppBackdrop(
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.panelBackground.withValues(alpha: 0.92),
-              border: Border.all(color: AppColors.borderSubtle),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppSpacing.radiusL),
+    final media = MediaQuery.of(context);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppSpacing.radiusL),
+          ),
+          child: AppBackdrop(
+            child: Container(
+              constraints: BoxConstraints(maxHeight: media.size.height * 0.92),
+              decoration: BoxDecoration(
+                color: AppColors.panelBackground.withValues(alpha: 0.92),
+                border: Border.all(color: AppColors.borderSubtle),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppSpacing.radiusL),
+                ),
               ),
-            ),
-            padding: const EdgeInsets.all(AppSpacing.l),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 56,
-                      height: 5,
-                      margin: const EdgeInsets.only(bottom: AppSpacing.l),
-                      decoration: BoxDecoration(
-                        color: AppColors.borderSubtle,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                  Text(
-                    widget.initialPlan == null ? 'Yeni Plan' : 'Plani Guncelle',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: AppSpacing.m),
-                  TextField(
-                    controller: _titleController,
-                    autofocus: true,
-                    style: Theme.of(context).textTheme.titleMedium,
-                    decoration: const InputDecoration(
-                      labelText: 'Baslik',
-                      hintText: 'Ne yapacaksin?',
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.s),
-                  TextField(
-                    controller: _descController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Detay',
-                      hintText: 'Not, baglam veya beklenen sonuc',
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.m),
-                  Wrap(
-                    spacing: AppSpacing.s,
-                    runSpacing: AppSpacing.s,
-                    children: PlanLane.values.map((lane) {
-                      final selected = _lane == lane;
-                      return ChoiceChip(
-                        label: Text(lane.labelTr),
-                        selected: selected,
-                        onSelected: (_) => setState(() => _lane = lane),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: AppSpacing.m),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ActionChip(
-                          label: Text(_selectedTime?.format(context) ?? 'Saat Sec'),
-                          avatar: const Icon(Icons.schedule_rounded, size: 16),
-                          onPressed: () async {
-                            final time = await showTimePicker(
-                              context: context,
-                              initialTime: _selectedTime ?? TimeOfDay.now(),
-                            );
-                            if (time != null) {
-                              setState(() => _selectedTime = time);
-                            }
-                          },
+              padding: const EdgeInsets.all(AppSpacing.l),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 56,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.l),
+                        decoration: BoxDecoration(
+                          color: AppColors.borderSubtle,
+                          borderRadius: BorderRadius.circular(999),
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.s),
-                      Expanded(
-                        child: DropdownButtonFormField<PlanPriority>(
-                          value: _priority,
-                          decoration: const InputDecoration(labelText: 'Oncelik'),
-                          items: PlanPriority.values.map((priority) {
-                            return DropdownMenuItem(
-                              value: priority,
-                              child: Text(priority.name.toUpperCase()),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => _priority = value);
-                            }
-                          },
-                        ),
+                    ),
+                    Text(
+                      widget.initialPlan == null ? 'Yeni Plan' : 'Plani Guncelle',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    TextField(
+                      controller: _titleController,
+                      autofocus: true,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      decoration: const InputDecoration(
+                        labelText: 'Baslik',
+                        hintText: 'Ne yapacaksin?',
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.m),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.m,
-                      vertical: AppSpacing.s,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.panelElevated.withValues(alpha: 0.54),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppColors.borderSubtle),
+                    const SizedBox(height: AppSpacing.s),
+                    TextField(
+                      controller: _descController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Detay',
+                        hintText: 'Not, baglam veya beklenen sonuc',
+                      ),
                     ),
-                    child: Row(
+                    const SizedBox(height: AppSpacing.m),
+                    Text(
+                      'Gorev Turu',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                    Wrap(
+                      spacing: AppSpacing.s,
+                      runSpacing: AppSpacing.s,
+                      children: PlanTaskType.values.map((type) {
+                        return ChoiceChip(
+                          label: Text(type.label),
+                          selected: _taskType == type,
+                          onSelected: (_) => setState(() => _taskType = type),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    Text(
+                      'Plan Lane',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                    Wrap(
+                      spacing: AppSpacing.s,
+                      runSpacing: AppSpacing.s,
+                      children: PlanLane.values.map((lane) {
+                        final selected = _lane == lane;
+                        return ChoiceChip(
+                          label: Text(lane.labelTr),
+                          selected: selected,
+                          onSelected: (_) => setState(() => _lane = lane),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    Row(
                       children: [
-                        const Icon(Icons.notifications_active_rounded),
-                        const SizedBox(width: AppSpacing.s),
                         Expanded(
-                          child: Text(
-                            'Hatirlatici aktif',
-                            style: Theme.of(context).textTheme.titleSmall,
+                          child: ActionChip(
+                            label: Text(_selectedTime?.format(context) ?? 'Saat Sec'),
+                            avatar: const Icon(Icons.schedule_rounded, size: 16),
+                            onPressed: () async {
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: _selectedTime ?? TimeOfDay.now(),
+                              );
+                              if (time != null) {
+                                setState(() => _selectedTime = time);
+                              }
+                            },
                           ),
                         ),
-                        Switch(
-                          value: _reminderEnabled,
-                          onChanged: (value) {
-                            setState(() => _reminderEnabled = value);
-                          },
+                        const SizedBox(width: AppSpacing.s),
+                        Expanded(
+                          child: DropdownButtonFormField<PlanPriority>(
+                            value: _priority,
+                            decoration: const InputDecoration(labelText: 'Oncelik'),
+                            items: PlanPriority.values.map((priority) {
+                              return DropdownMenuItem(
+                                value: priority,
+                                child: Text(priority.name.toUpperCase()),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _priority = value);
+                              }
+                            },
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.l),
-                  FilledButton(
-                    onPressed: _isSaving ? null : _savePlan,
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(widget.initialPlan == null ? 'Olustur' : 'Kaydet'),
-                  ),
-                ],
+                    const SizedBox(height: AppSpacing.m),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.m,
+                        vertical: AppSpacing.s,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.panelElevated.withValues(alpha: 0.54),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: AppColors.borderSubtle),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.notifications_active_rounded),
+                          const SizedBox(width: AppSpacing.s),
+                          Expanded(
+                            child: Text(
+                              'Hatirlatici aktif',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                          ),
+                          Switch(
+                            value: _reminderEnabled,
+                            onChanged: (value) => setState(() => _reminderEnabled = value),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.l),
+                    FilledButton(
+                      onPressed: _isSaving ? null : _savePlan,
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(widget.initialPlan == null ? 'Olustur' : 'Kaydet'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
