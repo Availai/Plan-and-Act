@@ -5,6 +5,13 @@ enum PlanTaskType {
   arastirma,
 }
 
+PlanTaskType parsePlanTaskTypeKey(String raw) {
+  return PlanTaskType.values.firstWhere(
+    (type) => type.key == raw,
+    orElse: () => PlanTaskType.programming,
+  );
+}
+
 extension PlanTaskTypeX on PlanTaskType {
   String get key => switch (this) {
         PlanTaskType.spor => 'spor',
@@ -26,11 +33,4 @@ extension PlanTaskTypeX on PlanTaskType {
         PlanTaskType.sosyallesme => 'SOSYALLESME',
         PlanTaskType.arastirma => 'ARASTIRMA',
       };
-
-  static PlanTaskType fromKey(String raw) {
-    return PlanTaskType.values.firstWhere(
-      (type) => type.key == raw,
-      orElse: () => PlanTaskType.programming,
-    );
-  }
 }

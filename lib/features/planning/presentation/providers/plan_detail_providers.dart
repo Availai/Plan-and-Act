@@ -17,41 +17,6 @@ class PlanQuoteInsight {
   final PlanTaskType taskType;
 }
 
-enum PlanTaskType {
-  spor,
-  programming,
-  sosyallesme,
-  arastirma,
-}
-
-extension PlanTaskTypeX on PlanTaskType {
-  String get tagSlug => switch (this) {
-        PlanTaskType.spor => 'sport',
-        PlanTaskType.programming => 'programming',
-        PlanTaskType.sosyallesme => 'sosyallesme',
-        PlanTaskType.arastirma => 'arastirma',
-      };
-
-  String get label => switch (this) {
-        PlanTaskType.spor => 'SPOR',
-        PlanTaskType.programming => 'PROGRAMMING',
-        PlanTaskType.sosyallesme => 'SOSYALLESME',
-        PlanTaskType.arastirma => 'ARASTIRMA',
-      };
-}
-
-class PlanQuoteInsight {
-  const PlanQuoteInsight({
-    required this.quoteText,
-    required this.figureName,
-    required this.taskType,
-  });
-
-  final String quoteText;
-  final String figureName;
-  final PlanTaskType taskType;
-}
-
 final planByIdProvider =
     FutureProvider.autoDispose.family<PlanEntity, String>((ref, planId) async {
   final repository = ref.watch(planRepositoryProvider);
@@ -92,7 +57,7 @@ PlanTaskType _detectTaskType(PlanEntity plan) {
   final snapshot = plan.motivationContextSnapshot ?? '';
   if (snapshot.startsWith('task_type:')) {
     final key = snapshot.replaceFirst('task_type:', '');
-    return PlanTaskTypeX.fromKey(key);
+    return parsePlanTaskTypeKey(key);
   }
 
   final text = '${plan.title} ${plan.description}'.toLowerCase();

@@ -71,7 +71,7 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
 
     final snapshot = initial.motivationContextSnapshot ?? '';
     if (snapshot.startsWith('task_type:')) {
-      _taskType = PlanTaskTypeX.fromKey(snapshot.replaceFirst('task_type:', ''));
+      _taskType = parsePlanTaskTypeKey(snapshot.replaceFirst('task_type:', ''));
     }
 
     if (initial.scheduledTimeLocal.isNotEmpty) {
