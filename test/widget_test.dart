@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,6 +37,14 @@ class _FakeNotificationScheduler implements NotificationScheduler {
     required String body,
     required DateTime scheduledFor,
     required String timezone,
+    Map<String, String>? payload,
+  }) async {}
+
+  @override
+  Future<void> showNow({
+    required int notificationId,
+    required String title,
+    required String body,
     Map<String, String>? payload,
   }) async {}
 }

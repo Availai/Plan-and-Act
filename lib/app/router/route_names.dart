@@ -8,7 +8,9 @@ class RouteNames {
   static const String stuck = '/stuck';
   static const String allPlans = '/plans';
   static const String planDetail = '/plan/:planId';
+  static const String focus = '/focus/:planId';
   static const String settings = '/settings';
 
   static String planDetailPath(String planId) => '/plan/$planId';
+  static String focusPath(String planId) => '/focus/$planId';
 }

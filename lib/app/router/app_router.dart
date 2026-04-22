@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:planandact/app/router/route_names.dart';
 import 'package:planandact/features/planning/presentation/screens/all_plans_screen.dart';
+import 'package:planandact/features/planning/presentation/screens/focus_screen.dart';
 import 'package:planandact/features/planning/presentation/screens/home_shell.dart';
 import 'package:planandact/features/planning/presentation/screens/momentum_screen.dart';
 import 'package:planandact/features/planning/presentation/screens/plan_detail_route_screen.dart';
@@ -53,6 +54,13 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final planId = state.pathParameters['planId']!;
         return PlanDetailRouteScreen(planId: planId);
+      },
+    ),
+    GoRoute(
+      path: RouteNames.focus,
+      builder: (context, state) {
+        final planId = state.pathParameters['planId']!;
+        return FocusScreen(planId: planId);
       },
     ),
     GoRoute(

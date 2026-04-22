@@ -11,6 +11,7 @@ class FakeNotificationScheduler implements NotificationScheduler {
   int rescheduleCalls = 0;
   int cancelCalls = 0;
   int cancelAllCalls = 0;
+  int showNowCalls = 0;
 
   @override
   Future<void> cancelAllForPlan(String planId) async {
@@ -44,6 +45,16 @@ class FakeNotificationScheduler implements NotificationScheduler {
     Map<String, String>? payload,
   }) async {
     scheduleCalls++;
+  }
+
+  @override
+  Future<void> showNow({
+    required int notificationId,
+    required String title,
+    required String body,
+    Map<String, String>? payload,
+  }) async {
+    showNowCalls++;
   }
 }
 

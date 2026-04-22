@@ -38,8 +38,8 @@ class HomeShell extends StatelessWidget {
       label: 'Momentum',
     ),
     NavigationDestination(
-      icon: Icon(Icons.warning_amber_rounded),
-      label: 'Stuck',
+      icon: Icon(Icons.casino_rounded),
+      label: 'Cark',
     ),
   ];
 
