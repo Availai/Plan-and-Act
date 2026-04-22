@@ -61,14 +61,15 @@ void main() {
     await db.customSelect('select 1').get();
 
     if (withPlan) {
-      final now = DateTime(2026, 4, 21, 9);
+      final realNow = DateTime.now();
+      final now = DateTime(realNow.year, realNow.month, realNow.day, 9);
       await db.into(db.plans).insert(
             PlansCompanion.insert(
               id: 'plan-1',
               userId: 'local_user',
               title: 'Derin calisma blogu',
               description: const Value('Mimari akisi toparla'),
-              scheduledDate: DateTime(2026, 4, 21),
+              scheduledDate: DateTime(realNow.year, realNow.month, realNow.day),
               scheduledTimeLocal: '09:30',
               scheduledAtUtc: now.toUtc(),
               categoryId: const Value('must_do'),
@@ -114,6 +115,9 @@ void main() {
     expect(find.text('Siradaki Aksiyon'), findsOneWidget);
     expect(find.text('Derin calisma blogu'), findsOneWidget);
     expect(find.textContaining('VIDEO'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
   });
 
   testWidgets('Settings screen states Dracula Neon and does not mention system theme', (tester) async {

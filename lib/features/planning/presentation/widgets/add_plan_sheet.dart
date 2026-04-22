@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:planandact/app/theme/app_colors.dart';
 import 'package:planandact/app/theme/app_spacing.dart';
@@ -49,6 +50,8 @@ class AddPlanSheet extends ConsumerStatefulWidget {
 class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
+  final _titleFocus = FocusNode();
+  final _descFocus = FocusNode();
 
   PlanPriority _priority = PlanPriority.medium;
   TimeOfDay? _selectedTime;
@@ -90,6 +93,8 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
   void dispose() {
     _titleController.dispose();
     _descController.dispose();
+    _titleFocus.dispose();
+    _descFocus.dispose();
     super.dispose();
   }
 
@@ -163,6 +168,7 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
 
     final isEditing = widget.initialPlan != null;
     setState(() => _isSaving = true);
+    HapticFeedback.lightImpact();
     final result = isEditing
         ? await ref.read(updatePlanUseCaseProvider).call(newPlan)
         : await ref.read(createPlanUseCaseProvider).call(newPlan);
@@ -172,8 +178,10 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
 
     switch (result) {
       case Success<PlanEntity>():
+        HapticFeedback.mediumImpact();
         Navigator.of(context).pop();
       case Err<PlanEntity>(:final failure):
+        HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(failure.message)),
         );
@@ -198,6 +206,13 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
               decoration: BoxDecoration(
                 color: AppColors.panelBackground.withValues(alpha: 0.92),
                 border: Border.all(color: AppColors.borderSubtle),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 16,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(AppSpacing.radiusL),
                 ),
@@ -224,22 +239,66 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: AppSpacing.m),
-                    TextField(
-                      controller: _titleController,
-                      autofocus: true,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      decoration: const InputDecoration(
-                        labelText: 'Baslik',
-                        hintText: 'Ne yapacaksin?',
+                    AnimatedBuilder(
+                      animation: _titleFocus,
+                      builder: (context, child) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: _titleFocus.hasFocus
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.accentCyan.withValues(alpha: 0.15),
+                                      blurRadius: 12,
+                                      spreadRadius: 2,
+                                    )
+                                  ]
+                                : [],
+                          ),
+                          child: child,
+                        );
+                      },
+                      child: TextField(
+                        controller: _titleController,
+                        focusNode: _titleFocus,
+                        autofocus: true,
+                        style: Theme.of(context).textTheme.titleMedium,
+                        decoration: const InputDecoration(
+                          labelText: 'Baslik',
+                          hintText: 'Ne yapacaksin?',
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.s),
-                    TextField(
-                      controller: _descController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Detay',
-                        hintText: 'Not, baglam veya beklenen sonuc',
+                    AnimatedBuilder(
+                      animation: _descFocus,
+                      builder: (context, child) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: _descFocus.hasFocus
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.accentCyan.withValues(alpha: 0.15),
+                                      blurRadius: 12,
+                                      spreadRadius: 2,
+                                    )
+                                  ]
+                                : [],
+                          ),
+                          child: child,
+                        );
+                      },
+                      child: TextField(
+                        controller: _descController,
+                        focusNode: _descFocus,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Detay',
+                          hintText: 'Not, baglam veya beklenen sonuc',
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.m),
@@ -252,10 +311,20 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
                       spacing: AppSpacing.s,
                       runSpacing: AppSpacing.s,
                       children: PlanTaskType.values.map((type) {
+                        final selected = _taskType == type;
                         return ChoiceChip(
                           label: Text(type.label),
-                          selected: _taskType == type,
-                          onSelected: (_) => setState(() => _taskType = type),
+                          selected: selected,
+                          backgroundColor: Colors.transparent,
+                          selectedColor: Colors.transparent,
+                          side: BorderSide(
+                            color: selected ? AppColors.accentCyan : AppColors.borderSubtle,
+                            width: selected ? 1.5 : 1,
+                          ),
+                          onSelected: (_) {
+                            HapticFeedback.lightImpact();
+                            setState(() => _taskType = type);
+                          },
                         );
                       }).toList(),
                     ),
@@ -273,7 +342,16 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
                         return ChoiceChip(
                           label: Text(lane.labelTr),
                           selected: selected,
-                          onSelected: (_) => setState(() => _lane = lane),
+                          backgroundColor: Colors.transparent,
+                          selectedColor: Colors.transparent,
+                          side: BorderSide(
+                            color: selected ? AppColors.laneColor(lane.id) : AppColors.borderSubtle,
+                            width: selected ? 1.5 : 1,
+                          ),
+                          onSelected: (_) {
+                            HapticFeedback.lightImpact();
+                            setState(() => _lane = lane);
+                          },
                         );
                       }).toList(),
                     ),
@@ -282,9 +360,13 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
                       children: [
                         Expanded(
                           child: ActionChip(
-                            label: Text(_selectedTime?.format(context) ?? 'Saat Sec'),
+                            label: Text(
+                              _selectedTime?.format(context) ?? 'Saat Sec',
+                              style: const TextStyle(fontFamily: 'JetBrains Mono'),
+                            ),
                             avatar: const Icon(Icons.schedule_rounded, size: 16),
                             onPressed: () async {
+                              HapticFeedback.lightImpact();
                               final time = await showTimePicker(
                                 context: context,
                                 initialTime: _selectedTime ?? TimeOfDay.now(),
@@ -308,6 +390,7 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
                             }).toList(),
                             onChanged: (value) {
                               if (value != null) {
+                                HapticFeedback.selectionClick();
                                 setState(() => _priority = value);
                               }
                             },
@@ -338,7 +421,10 @@ class _AddPlanSheetState extends ConsumerState<AddPlanSheet> {
                           ),
                           Switch(
                             value: _reminderEnabled,
-                            onChanged: (value) => setState(() => _reminderEnabled = value),
+                            onChanged: (value) {
+                              HapticFeedback.lightImpact();
+                              setState(() => _reminderEnabled = value);
+                            },
                           ),
                         ],
                       ),
