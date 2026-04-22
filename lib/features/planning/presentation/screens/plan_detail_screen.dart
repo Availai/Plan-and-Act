@@ -5,6 +5,7 @@ import 'package:planandact/app/theme/app_spacing.dart';
 import 'package:planandact/features/planning/application/providers/use_case_providers.dart';
 import 'package:planandact/features/planning/domain/entities/plan_entity.dart';
 import 'package:planandact/features/planning/domain/value_objects/plan_status.dart';
+import 'package:planandact/features/planning/presentation/providers/plan_detail_providers.dart';
 import 'package:planandact/shared/presentation/widgets/app_backdrop.dart';
 
 class PlanDetailScreen extends ConsumerWidget {
@@ -17,6 +18,8 @@ class PlanDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final quoteAsync = ref.watch(planQuoteInsightProvider(plan));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Plan Detayi'),
@@ -74,6 +77,15 @@ class PlanDetailScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
+              const SizedBox(height: AppSpacing.l),
+              quoteAsync.when(
+                loading: () => const _QuoteLoadingCard(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (insight) {
+                  if (insight == null) return const SizedBox.shrink();
+                  return _AnimatedQuoteCard(insight: insight);
+                },
+              ),
               const SizedBox(height: AppSpacing.xl),
               if (plan.status == PlanStatus.planned || plan.status == PlanStatus.postponed) ...[
                 SizedBox(
@@ -118,6 +130,115 @@ class PlanDetailScreen extends ConsumerWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
+      ),
+    );
+  }
+}
+
+class _AnimatedQuoteCard extends StatelessWidget {
+  const _AnimatedQuoteCard({required this.insight});
+
+  final PlanQuoteInsight insight;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 550),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 16),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.l),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.panelElevated.withValues(alpha: 0.95),
+              AppColors.panelBackground.withValues(alpha: 0.92),
+            ],
+          ),
+          border: Border.all(
+            color: AppColors.accentPurple.withValues(alpha: 0.45),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accentPurple.withValues(alpha: 0.18),
+              blurRadius: 26,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppColors.accentPurple,
+                ),
+                const SizedBox(width: AppSpacing.s),
+                Text(
+                  'Onemli Soz • ${insight.taskType.label}',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppColors.accentPurple,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.m),
+            Text(
+              '"${insight.quoteText}"',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: AppSpacing.m),
+            Text(
+              '— ${insight.figureName}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.accentCyan,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuoteLoadingCard extends StatelessWidget {
+  const _QuoteLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.l),
+      decoration: BoxDecoration(
+        color: AppColors.panelBackground.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: AppSpacing.s),
+          Text('Uygun soz seciliyor...'),
+        ],
       ),
     );
   }

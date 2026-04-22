@@ -10,13 +10,11 @@ class NextActionCard extends StatelessWidget {
     required this.plan,
     required this.onOpen,
     required this.onComplete,
-    required this.onCreatePlan,
   });
 
   final PlanEntity? plan;
   final VoidCallback onOpen;
   final VoidCallback onComplete;
-  final VoidCallback onCreatePlan;
 
   @override
   Widget build(BuildContext context) {
@@ -58,12 +56,6 @@ class NextActionCard extends StatelessWidget {
               Text(
                 'Siradaki aksiyon karti bos. Yeni bir plan ekleyip gunu netlestir.',
                 style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: AppSpacing.l),
-              FilledButton.icon(
-                onPressed: onCreatePlan,
-                icon: const Icon(Icons.add_task_rounded),
-                label: const Text('Yeni Plan'),
               ),
             ],
           ),
