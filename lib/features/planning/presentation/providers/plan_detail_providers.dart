@@ -3,6 +3,19 @@ import 'package:planandact/core/result/result.dart';
 import 'package:planandact/features/planning/application/providers/database_provider.dart';
 import 'package:planandact/features/planning/application/providers/plan_repository_provider.dart';
 import 'package:planandact/features/planning/domain/entities/plan_entity.dart';
+import 'package:planandact/features/planning/domain/value_objects/plan_task_type.dart';
+
+class PlanQuoteInsight {
+  const PlanQuoteInsight({
+    required this.quoteText,
+    required this.figureName,
+    required this.taskType,
+  });
+
+  final String quoteText;
+  final String figureName;
+  final PlanTaskType taskType;
+}
 
 enum PlanTaskType {
   spor,
@@ -76,6 +89,12 @@ final planQuoteInsightProvider =
 });
 
 PlanTaskType _detectTaskType(PlanEntity plan) {
+  final snapshot = plan.motivationContextSnapshot ?? '';
+  if (snapshot.startsWith('task_type:')) {
+    final key = snapshot.replaceFirst('task_type:', '');
+    return PlanTaskTypeX.fromKey(key);
+  }
+
   final text = '${plan.title} ${plan.description}'.toLowerCase();
 
   const sporKeywords = [
